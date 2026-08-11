@@ -1,6 +1,6 @@
 import pytest 
 
-from prompteasy import PromptAnalyzer
+from src.prompteasy import PromptAnalyzer
 
 def test_analyzer_accepts_valid_prompt():
     analyzer = PromptAnalyzer()
