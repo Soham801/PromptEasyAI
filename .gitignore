@@ -9,3 +9,9 @@ wheels/
 # Virtual environments
 .venv
 .env
+.env.*
+.vscode/
+.idea/
+!.env.example
+.pytest_cache/
+*.pyc
