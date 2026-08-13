@@ -6,6 +6,8 @@ class PromptAnalyzer:
     Analyzes user prompt and converts them into 
     a structured PromptAnalysis representation.
     """
+    def __init__(self,provider: GroqProvider | None = None):
+        self.provider= provider or GroqProvider()
 
     def analyze(self,prompt:str) -> PromptAnalysis:
         """
@@ -22,17 +24,35 @@ class PromptAnalyzer:
 
         prompt = prompt.strip()
 
-        return PromptAnalysis(
-            original_prompt=prompt,
-            intent="",
-            task="",
-            context=[],
-            constraints=[],
-            output_requirements=[],
-            ambiguities=[],
-            missing_information=[],
-            optimization_oppotunities=[],
+        response = self.provider.client.chat.completions.create(
+            model = self.provider.model,
+            messages=[
+                {
+                    "role":"system",
+                    "content":ANALYZER_INSTRUCTION,
+                },
+                {
+                  "role":"user",
+                  "content":prompt,  
+                }
+            ],
+            response_format = {
+                "type":"json_schema",
+                "json_schema":{
+                    "name":"prompt_analysis",
+                    "strict":True,
+                    "schema": PromptAnalysis.model_json_schema(),
+                }
+            }
         )
+        content = response.choices[0].message.content
+
+        if not content:
+            raise RuntimeError(
+                "THe LLM returned an empty response"
+            )
+
+        return PromptAnalysis.model_validate_json(content)
 
 ANALYZER_INSTRUCTION = """
 
