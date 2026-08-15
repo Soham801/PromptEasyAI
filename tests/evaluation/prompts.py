@@ -27,5 +27,10 @@ EVALUATION_PROMPTS = [
         expected_intent="Understand how transformers work in LLMs",
         expected_task="Explain transformer architecture and attention",
         difficulty="medium"
+    ),
+
+    EvaluationPrompt(
+        name="",
+        prompt="",
     )
 ]
