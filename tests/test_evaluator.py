@@ -38,5 +38,5 @@ def test_empty_original_prompt_is_invalid():
 
     result = evaluate_analysis(analysis)
 
-    assert result.valis is False
+    assert result.valid is False
     assert "original_prompt is empty" in result.errors
