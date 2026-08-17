@@ -19,3 +19,11 @@ def main():
         analysis = analyzer.analyze(item.prompt)
 
         result = evaluate_analysis(analysis)
+
+        if result.valid:
+            passed += 1
+            print("Structural validation: PASS")
+        else:
+            print("Structural validation: FAIL")
+            for error in result.errors:
+                print(f" - {error}")
