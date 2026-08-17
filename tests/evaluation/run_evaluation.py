@@ -30,7 +30,6 @@ def main():
         print(f"Intent: {analysis.intent}")
         print(f"Task: {analysis.task}")
 
-
     print(f"\n{'=' * 60}")
     print(f"Results: {passed}/{total} structurally valid")
 
