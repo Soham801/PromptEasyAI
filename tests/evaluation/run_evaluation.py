@@ -34,3 +34,7 @@ def main():
 
     print(f"\n{'=' * 60}")
     print(f"Results: {passed}/{total} structurally valid")
+
+
+if __name__ == "main":
+    main()
