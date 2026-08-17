@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from .models import PromptAnalysis
 
-
 @dataclass(frozen=True)
 class EvaluationResult:
     valid: bool
