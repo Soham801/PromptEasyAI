@@ -27,3 +27,10 @@ def main():
             print("Structural validation: FAIL")
             for error in result.errors:
                 print(f" - {error}")
+
+        print(f"Intent: {analysis.intent}")
+        print(f"Task: {analysis.task}")
+
+
+    print(f"\n{'=' * 60}")
+    print(f"Results: {passed}/{total} structurally valid")
