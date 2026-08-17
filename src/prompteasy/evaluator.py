@@ -24,7 +24,7 @@ def evaluate_analysis(
         errors.append("ambiguities must be a list")
     if not isinstance(analysis.missing_information,list):
         errors.append("missing_information must be a list")
-    if not isinstance(analysis.optimization_oppotunities,list):
+    if not isinstance(analysis.optimization_opportunities,list):
         errors.append("optimization_opportunities must be a list")
 
     return EvaluationResult(

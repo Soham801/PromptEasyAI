@@ -40,6 +40,6 @@ class PromptAnalysis(BaseModel):
         description="Information that could materially improve execution of the task."
     )
 
-    optimization_oppotunities: list[str] = Field(
+    optimization_opportunities: list[str] = Field(
         description="Potential ways the prompt could be improved without changing the intent."
     )
