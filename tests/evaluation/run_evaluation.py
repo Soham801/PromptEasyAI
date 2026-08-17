@@ -36,5 +36,5 @@ def main():
     print(f"Results: {passed}/{total} structurally valid")
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
