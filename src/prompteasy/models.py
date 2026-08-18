@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
 
-
 class PromptAnalysis(BaseModel):
     """
     Structured representation of a user's prompt.
