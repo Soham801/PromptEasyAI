@@ -9,7 +9,6 @@ class EvaluationPrompt:
     expected_task: str
     difficulty: str
 
-
 EVALUATION_PROMPTS = [
 
     EvaluationPrompt(
