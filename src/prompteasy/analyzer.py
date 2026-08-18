@@ -1,9 +1,6 @@
 from __future__ import annotations
-
 from typing import Final
-
 from groq import BadRequestError
-
 from .llm import GroqProvider
 from .models import PromptAnalysis
 
