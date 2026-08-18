@@ -17,7 +17,6 @@ def test_valid_prompt_analysis():
 
     result = evaluate_analysis(analysis)
 
-
     assert result.valid is True
     assert result.errors == []
 
