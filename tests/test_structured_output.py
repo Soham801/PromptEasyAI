@@ -1,7 +1,6 @@
 from prompteasy.llm import GroqProvider
 from prompteasy.models import PromptAnalysis
 
-
 provider = GroqProvider()
 
 response = provider.client.chat.completions.create(
