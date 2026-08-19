@@ -34,7 +34,6 @@ def test_empty_original_prompt_is_invalid():
         missing_information=[],
         optimization_opportunities=[],
     )
-
     result = evaluate_analysis(analysis)
 
     assert result.valid is False
