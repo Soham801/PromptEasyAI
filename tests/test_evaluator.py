@@ -12,7 +12,7 @@ def test_valid_prompt_analysis():
         output_requirements=[],
         ambiguities=[],
         missing_information=[],
-        optimization_oppotunities=[],
+        optimization_opportunities=[],
     )
 
     result = evaluate_analysis(analysis)
@@ -32,7 +32,7 @@ def test_empty_original_prompt_is_invalid():
         output_requirements=[],
         ambiguities=[],
         missing_information=[],
-        optimization_oppotunities=[],
+        optimization_opportunities=[],
     )
 
     result = evaluate_analysis(analysis)
