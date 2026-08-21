@@ -4,7 +4,6 @@ from .prompts import EVALUATION_PROMPTS
 
 def main():
     analyzer = PromptAnalyzer()
-
     total = len(EVALUATION_PROMPTS)
     passed = 0
 
@@ -16,7 +15,6 @@ def main():
         print(f"Input: {item.prompt}")
 
         analysis = analyzer.analyze(item.prompt)
-
         result = evaluate_analysis(analysis)
 
         if result.valid:
