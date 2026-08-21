@@ -10,7 +10,6 @@ from .models import PromptAnalysis
 # ---------------------------------------------------------------------------
 
 MAX_ANALYSIS_ATTEMPTS: Final[int] = 2
-
 ANALYSIS_SCHEMA_NAME: Final[str] = "prompt_analysis"
 
 
