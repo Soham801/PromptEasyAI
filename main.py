@@ -1,4 +1,4 @@
-from src.prompteasy import PromptAnalyzer
+from prompteasy import PromptAnalyzer
 
 def main():
     analyzer = PromptAnalyzer()
@@ -18,7 +18,8 @@ def main():
     print(f"Output Requirements: {analysis.output_requirements}")
     print(f"Ambiguities: {analysis.ambiguities}")
     print(f"Missing Information: {analysis.missing_information}")
-    print(f"Optimization Oppotunities: {analysis.optimization_oppotunities}")
+    print(f"Optimization Opportunities: {analysis.optimization_opportunities}")
+    print(f"Optimized Prompt: {analysis.optimized_prompt}")
 
 if __name__ == "__main__":
     main()

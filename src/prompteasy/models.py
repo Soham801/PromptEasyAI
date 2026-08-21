@@ -42,3 +42,7 @@ class PromptAnalysis(BaseModel):
     optimization_opportunities: list[str] = Field(
         description="Potential ways the prompt could be improved without changing the intent."
     )
+
+    optimized_prompt: str = Field(
+        description="An improved version of the prompt that preserves the user's intent."
+    )

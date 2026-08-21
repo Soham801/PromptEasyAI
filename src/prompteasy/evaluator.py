@@ -18,6 +18,8 @@ def evaluate_analysis(
         errors.append("intent is empty")
     if not analysis.task.strip():
         errors.append("task is empty")
+    if not analysis.optimized_prompt.strip():
+        errors.append("optimized_prompt is empty")
     if not isinstance(analysis.constraints,list):
         errors.append("constraints must be a list")
     if not isinstance(analysis.ambiguities,list):

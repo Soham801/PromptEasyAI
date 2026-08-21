@@ -13,6 +13,7 @@ def test_valid_prompt_analysis():
         ambiguities=[],
         missing_information=[],
         optimization_opportunities=[],
+        optimized_prompt="Explain machine learning in clear, beginner-friendly terms.",
     )
 
     result = evaluate_analysis(analysis)
@@ -33,6 +34,7 @@ def test_empty_original_prompt_is_invalid():
         ambiguities=[],
         missing_information=[],
         optimization_opportunities=[],
+        optimized_prompt="Explain machine learning.",
     )
     result = evaluate_analysis(analysis)
 

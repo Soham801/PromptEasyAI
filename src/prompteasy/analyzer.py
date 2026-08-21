@@ -64,9 +64,7 @@ class PromptAnalyzer:
         if not isinstance(prompt, str):
             raise TypeError("Prompt must be a string.")
 
-        prompt = prompt.strip()
-
-        if not prompt:
+        if not prompt.strip():
             raise ValueError("Prompt cannot be empty.")
 
         last_error: Exception | None = None
@@ -171,7 +169,7 @@ RETRY REQUIREMENT:
 
 This is a retry of the structured analysis.
 
-Before completing your response, verify that ALL 9 required fields
+Before completing your response, verify that ALL 10 required fields
 are present:
 
 1. original_prompt
@@ -183,6 +181,7 @@ are present:
 7. ambiguities
 8. missing_information
 9. optimization_opportunities
+10. optimized_prompt
 
 Every field is mandatory.
 
@@ -214,7 +213,7 @@ Do NOT optimize the user's prompt.
 
 Analyze the request only.
 
-The structured response contains exactly these 9 fields:
+The structured response contains exactly these 10 fields:
 
 1. original_prompt
 2. intent
@@ -225,6 +224,7 @@ The structured response contains exactly these 9 fields:
 7. ambiguities
 8. missing_information
 9. optimization_opportunities
+10. optimized_prompt
 
 Every field is mandatory.
 
@@ -262,6 +262,10 @@ optimization_opportunities:
 Specific ways the prompt could be made clearer, more specific,
 or more effective without changing the user's original intent.
 
+optimized_prompt:
+A complete, ready-to-use version of the user's prompt that improves
+clarity and specificity without inventing facts, requirements, or context.
+
 IMPORTANT RULES:
 
 - Preserve the user's original intent.
@@ -277,8 +281,14 @@ IMPORTANT RULES:
   materially improve execution.
 - Optimization opportunities should describe improvements to the
   prompt, not perform those improvements.
+- optimized_prompt must be a prompt for the requested task, not the
+    answer to that task.
+- Preserve all explicit requirements and constraints in optimized_prompt.
+- Resolve ambiguity only by making the uncertainty explicit or by using
+    a clearly marked placeholder; do not guess missing facts.
 - Do not omit any field.
 - optimization_opportunities MUST always be present.
+- optimized_prompt MUST always be present.
 - If there are no useful optimization opportunities, return [].
 - Keep the analysis concise but sufficiently specific.
 
