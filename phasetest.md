@@ -69,3 +69,20 @@ Expected result:
 ```
 
 This verifies the stable Python API surface, JSON-serializable analysis output, evaluation helper functions, and the command-line interface for analyze/evaluate/config actions.
+
+## Phase 5: Backend Service
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py tests/test_backend.py
+```
+
+Expected result:
+
+```text
+24 passed in 3.63s
+```
+
+This verifies the health check, analysis endpoint, evaluation endpoint, config endpoint, and HTTP contract for the backend service layer.

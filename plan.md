@@ -191,7 +191,7 @@ From the repository root in PowerShell:
 
 Expected result: `20 passed in 1.73s`
 
-## 8. Phase 5: Backend Service
+## 8. Phase 5: Backend Service - Completed
 
 ### Goal
 
@@ -214,6 +214,15 @@ Expose PromptEasyAI as a service for web clients and integrations.
 - Long-running or failed provider requests do not block resources indefinitely.
 - Sensitive prompt and credential data are handled according to documented policy.
 - The service can be deployed reproducibly.
+
+### Phase 5 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py tests/test_backend.py`
+
+Expected result: `24 passed in 3.63s`
 
 ## 9. Phase 6: User Interface
 
