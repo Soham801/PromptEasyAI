@@ -160,7 +160,7 @@ From the repository root in PowerShell:
 
 Expected result: `16 passed in 1.86s`
 
-## 7. Phase 4: Public Python API And CLI
+## 7. Phase 4: Public Python API And CLI - Completed
 
 ### Goal
 
@@ -182,6 +182,15 @@ Provide a stable interface for developers and a useful local workflow for indivi
 - Scripts can consume a stable JSON response.
 - The CLI clearly separates the original prompt, findings, and optimized prompt.
 - CLI behavior is covered with automated tests.
+
+### Phase 4 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py`
+
+Expected result: `20 passed in 1.73s`
 
 ## 8. Phase 5: Backend Service
 

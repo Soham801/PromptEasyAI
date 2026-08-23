@@ -1,4 +1,6 @@
+import json
 import os
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any, Protocol, runtime_checkable
 
@@ -134,12 +136,35 @@ class GroqProvider:
             raise normalize_provider_error(exc) from exc
 
 
+def build_offline_response(prompt: str) -> str:
+    prompt_text = prompt.strip() or "prompt"
+    return json.dumps(
+        {
+            "schema_version": "1.0",
+            "original_prompt": prompt,
+            "intent": f"Understand {prompt_text}",
+            "task": f"Process the user's request: {prompt_text}",
+            "context": [],
+            "constraints": [],
+            "output_requirements": [],
+            "ambiguities": [],
+            "missing_information": [],
+            "optimization_opportunities": ["Clarify the audience and desired output."],
+            "optimized_prompt": f"{prompt_text}. Provide a clear, direct, and well-structured response.",
+        }
+    )
+
+
 class OfflineProvider:
     """Simple deterministic provider for tests and local development."""
 
-    def __init__(self, response: str, model: str = "offline-model"):
+    def __init__(
+        self,
+        response: str | Callable[[str], str] | None = None,
+        model: str = "offline-model",
+    ):
         self.model = model
-        self._response = response
+        self._response = response or build_offline_response
 
     def generate(
         self,
@@ -148,10 +173,17 @@ class OfflineProvider:
         messages: list[dict[str, str]],
         response_format: dict[str, Any] | None = None,
     ) -> Any:
+        user_message = ""
+        for item in messages:
+            if item.get("role") == "user":
+                user_message = item.get("content", "")
+                break
+
+        response_text = self._response(user_message) if callable(self._response) else self._response
         return SimpleNamespace(
             choices=[
                 SimpleNamespace(
-                    message=SimpleNamespace(content=self._response)
+                    message=SimpleNamespace(content=response_text)
                 )
             ]
         )

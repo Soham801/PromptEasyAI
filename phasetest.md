@@ -52,3 +52,20 @@ Expected result:
 ```
 
 This verifies structural evaluation, semantic evaluation, evaluation dataset coverage, and pass-rate reporting for the quality-measurement phase.
+
+## Phase 4: Public Python API And CLI
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py
+```
+
+Expected result:
+
+```text
+20 passed in 1.77s
+```
+
+This verifies the stable Python API surface, JSON-serializable analysis output, evaluation helper functions, and the command-line interface for analyze/evaluate/config actions.
