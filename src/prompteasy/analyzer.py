@@ -1,7 +1,17 @@
 from __future__ import annotations
+
+import time
 from typing import Final
-from groq import BadRequestError
-from .llm import GroqProvider
+
+from .llm import (
+    ConnectionError,
+    PromptProvider,
+    PromptProviderError,
+    RateLimitError,
+    SchemaError,
+    ServerError,
+    TimeoutError,
+)
 from .models import PromptAnalysis
 
 
@@ -27,15 +37,20 @@ class PromptAnalyzer:
     original request without executing or rewriting it.
     """
 
-    def __init__(self, provider: GroqProvider | None = None) -> None:
+    def __init__(self, provider: PromptProvider | None = None) -> None:
         """
         Initialize the prompt analyzer.
 
         Args:
-            provider: Optional GroqProvider instance. If omitted,
+            provider: Optional provider instance. If omitted,
                 a default GroqProvider is created.
         """
-        self.provider = provider or GroqProvider()
+        if provider is None:
+            from .llm import GroqProvider
+
+            provider = GroqProvider()
+
+        self.provider = provider
 
         # Generate the schema once during initialization instead of
         # regenerating it for every analysis attempt.
@@ -72,9 +87,9 @@ class PromptAnalyzer:
             try:
                 system_instruction = self._build_system_instruction(attempt)
 
-                response = self.provider.client.chat.completions.create(
-                    model=self.provider.model,
-                    messages=[
+                request = {
+                    "model": self.provider.model,
+                    "messages": [
                         {
                             "role": "system",
                             "content": system_instruction,
@@ -84,7 +99,7 @@ class PromptAnalyzer:
                             "content": prompt,
                         },
                     ],
-                    response_format={
+                    "response_format": {
                         "type": "json_schema",
                         "json_schema": {
                             "name": ANALYSIS_SCHEMA_NAME,
@@ -92,7 +107,16 @@ class PromptAnalyzer:
                             "schema": self._schema,
                         },
                     },
-                )
+                }
+
+                if hasattr(self.provider, "generate"):
+                    response = self.provider.generate(**request)
+                else:
+                    response = self.provider.client.chat.completions.create(
+                        model=request["model"],
+                        messages=request["messages"],
+                        response_format=request["response_format"],
+                    )
 
                 content = response.choices[0].message.content
 
@@ -101,43 +125,25 @@ class PromptAnalyzer:
                         "The LLM returned an empty response."
                     )
 
-                # Pydantic performs the final application-level
-                # validation after Groq's schema validation.
                 return PromptAnalysis.model_validate_json(content)
 
-            except BadRequestError as exc:
-                """
-                Groq can occasionally reject a structured generation even
-                when the schema itself is valid. Retry once with a reinforced
-                instruction before failing.
-                """
+            except PromptProviderError as exc:
                 last_error = exc
 
-                if attempt < MAX_ANALYSIS_ATTEMPTS:
+                if exc.retryable and attempt < MAX_ANALYSIS_ATTEMPTS:
+                    time.sleep(0.5 * attempt)
                     continue
 
                 raise RuntimeError(
-                    "Prompt analysis failed after "
-                    f"{MAX_ANALYSIS_ATTEMPTS} attempts because Groq "
-                    "could not generate schema-compliant JSON."
+                    "Prompt analysis failed because the model provider rejected the request."
                 ) from exc
 
             except ValueError as exc:
-                """
-                Covers Pydantic validation failures and other value-related
-                response problems.
-
-                These are not silently retried because they may indicate
-                a genuine schema/application issue.
-                """
                 raise RuntimeError(
                     "Prompt analysis produced an invalid structured response."
                 ) from exc
 
             except RuntimeError:
-                """
-                Empty-response or explicit runtime failures are propagated.
-                """
                 raise
 
         # Defensive fallback. The loop should always either return or raise.
@@ -168,19 +174,20 @@ RETRY REQUIREMENT:
 
 This is a retry of the structured analysis.
 
-Before completing your response, verify that ALL 10 required fields
+Before completing your response, verify that ALL 11 required fields
 are present:
 
-1. original_prompt
-2. intent
-3. task
-4. context
-5. constraints
-6. output_requirements
-7. ambiguities
-8. missing_information
-9. optimization_opportunities
-10. optimized_prompt
+1. schema_version
+2. original_prompt
+3. intent
+4. task
+5. context
+6. constraints
+7. output_requirements
+8. ambiguities
+9. missing_information
+10. optimization_opportunities
+11. optimized_prompt
 
 Every field is mandatory.
 
@@ -188,7 +195,7 @@ Every array field must contain an array.
 
 If a category has no relevant information, return [].
 
-Do not stop generation before all 9 fields are present.
+Do not stop generation before all 11 fields are present.
 """
 
 
@@ -212,18 +219,19 @@ Do NOT optimize the user's prompt.
 
 Analyze the request only.
 
-The structured response contains exactly these 10 fields:
+The structured response contains exactly these 11 fields:
 
-1. original_prompt
-2. intent
-3. task
-4. context
-5. constraints
-6. output_requirements
-7. ambiguities
-8. missing_information
-9. optimization_opportunities
-10. optimized_prompt
+1. schema_version
+2. original_prompt
+3. intent
+4. task
+5. context
+6. constraints
+7. output_requirements
+8. ambiguities
+9. missing_information
+10. optimization_opportunities
+11. optimized_prompt
 
 Every field is mandatory.
 

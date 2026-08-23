@@ -84,7 +84,16 @@ Create a stable, well-tested domain contract for analyzing and improving prompts
 - Contract violations produce clear application errors.
 - Unit tests do not make network calls.
 
-## 5. Phase 2: LLM Provider And Reliability Layer
+### Phase 1 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py`
+
+Expected result: `9 passed in 1.13s`
+
+## 5. Phase 2: LLM Provider And Reliability Layer - Completed
 
 ### Goal
 
@@ -108,6 +117,15 @@ Make model communication configurable, observable, and resilient.
 - Missing credentials fail with an actionable message.
 - A caller can select a provider and model through configuration.
 - Tests pass with no network access.
+
+### Phase 2 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py`
+
+Expected result: `12 passed in 1.72s`
 
 ## 6. Phase 3: Evaluation And Quality Measurement
 
