@@ -1,35 +1,57 @@
 from dataclasses import dataclass
+
 from .models import PromptAnalysis
+
 
 @dataclass(frozen=True)
 class EvaluationResult:
     valid: bool
     errors: list[str]
 
-def evaluate_analysis(
-        analysis: PromptAnalysis,
 
+def evaluate_analysis(
+    analysis: PromptAnalysis,
 ) -> EvaluationResult:
     errors: list[str] = []
 
-    if not analysis.original_prompt.strip():
-        errors.append("original_prompt is empty")
-    if not analysis.intent.strip():
-        errors.append("intent is empty")
-    if not analysis.task.strip():
-        errors.append("task is empty")
-    if not analysis.optimized_prompt.strip():
-        errors.append("optimized_prompt is empty")
-    if not isinstance(analysis.constraints,list):
-        errors.append("constraints must be a list")
-    if not isinstance(analysis.ambiguities,list):
-        errors.append("ambiguities must be a list")
-    if not isinstance(analysis.missing_information,list):
-        errors.append("missing_information must be a list")
-    if not isinstance(analysis.optimization_opportunities,list):
-        errors.append("optimization_opportunities must be a list")
+    required_text_fields = [
+        "original_prompt",
+        "intent",
+        "task",
+        "optimized_prompt",
+    ]
+
+    for field_name in required_text_fields:
+        value = getattr(analysis, field_name)
+        if not isinstance(value, str):
+            errors.append(f"{field_name} must be a string")
+        elif not value.strip():
+            errors.append(f"{field_name} is empty")
+
+    list_fields = [
+        "context",
+        "constraints",
+        "output_requirements",
+        "ambiguities",
+        "missing_information",
+        "optimization_opportunities",
+    ]
+
+    for field_name in list_fields:
+        value = getattr(analysis, field_name)
+        if not isinstance(value, list):
+            errors.append(f"{field_name} must be a list")
+            continue
+
+        for index, item in enumerate(value):
+            if not isinstance(item, str):
+                errors.append(
+                    f"{field_name} must contain only strings; item {index} is not a string"
+                )
+            elif not item.strip():
+                errors.append(f"{field_name} contains an empty string at index {index}")
 
     return EvaluationResult(
-        valid=len(errors)==0,
-        errors=errors
+        valid=len(errors) == 0,
+        errors=errors,
     )
