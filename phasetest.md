@@ -35,3 +35,20 @@ Expected result:
 ```
 
 This verifies the provider abstraction, offline/mock provider flow, provider error normalization, API key guard, and bounded retry behavior for retryable failures.
+
+## Phase 3: Evaluation And Quality Measurement
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py
+```
+
+Expected result:
+
+```text
+16 passed in 1.86s
+```
+
+This verifies structural evaluation, semantic evaluation, evaluation dataset coverage, and pass-rate reporting for the quality-measurement phase.

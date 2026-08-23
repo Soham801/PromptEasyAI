@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
+from typing import Any
 
 from .models import PromptAnalysis
 
@@ -9,9 +11,51 @@ class EvaluationResult:
     errors: list[str]
 
 
-def evaluate_analysis(
-    analysis: PromptAnalysis,
-) -> EvaluationResult:
+@dataclass(frozen=True)
+class EvaluationExample:
+    prompt: str
+    expected_intent: str
+    expected_task: str
+    category: str
+    difficulty: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class EvaluationDataset:
+    version: str
+    examples: list[EvaluationExample]
+
+
+@dataclass(frozen=True)
+class EvaluationReport:
+    passed: int
+    failed: int
+    pass_rate: float
+    by_category: dict[str, float]
+    by_difficulty: dict[str, float]
+
+
+def _tokenize(value: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9']+", (value or "").lower())
+        if len(token) > 2
+    }
+
+
+def _similarity(left: str, right: str) -> float:
+    left_tokens = _tokenize(left)
+    right_tokens = _tokenize(right)
+    if not left_tokens or not right_tokens:
+        return 0.0
+    union = left_tokens | right_tokens
+    if not union:
+        return 0.0
+    return len(left_tokens & right_tokens) / len(union)
+
+
+def structural_evaluation(analysis: PromptAnalysis) -> EvaluationResult:
     errors: list[str] = []
 
     required_text_fields = [
@@ -55,3 +99,87 @@ def evaluate_analysis(
         valid=len(errors) == 0,
         errors=errors,
     )
+
+
+def semantic_evaluation(analysis: PromptAnalysis) -> EvaluationResult:
+    errors: list[str] = []
+
+    original = analysis.original_prompt
+    intent = analysis.intent
+    task = analysis.task
+    optimized = analysis.optimized_prompt
+
+    intent_overlap = _similarity(original, intent)
+    task_overlap = _similarity(original, task)
+    optimized_overlap = _similarity(original, optimized)
+
+    if intent_overlap < 0.15 and task_overlap < 0.15:
+        errors.append("intent and task are not materially related to the original prompt")
+
+    if optimized_overlap < 0.15:
+        errors.append("optimized_prompt is not materially related to the original prompt")
+
+    return EvaluationResult(
+        valid=len(errors) == 0,
+        errors=errors,
+    )
+
+
+def evaluate_analysis(analysis: PromptAnalysis) -> EvaluationResult:
+    structural = structural_evaluation(analysis)
+    semantic = semantic_evaluation(analysis)
+
+    errors = structural.errors + semantic.errors
+    return EvaluationResult(
+        valid=structural.valid and semantic.valid,
+        errors=errors,
+    )
+
+
+def create_evaluation_dataset() -> EvaluationDataset:
+    examples = [
+        EvaluationExample(
+            prompt="Explain machine learning in simple terms.",
+            expected_intent="Understand machine learning",
+            expected_task="Explain machine learning",
+            category="simple",
+            difficulty="easy",
+        ),
+        EvaluationExample(
+            prompt="Compare Redis and Postgres for an analytics pipeline.",
+            expected_intent="Choose a database for analytics",
+            expected_task="Compare Redis and Postgres",
+            category="technical",
+            difficulty="medium",
+        ),
+        EvaluationExample(
+            prompt="Help me write a better product brief.",
+            expected_intent="Improve a product brief",
+            expected_task="Refine a product brief",
+            category="ambiguous",
+            difficulty="medium",
+        ),
+        EvaluationExample(
+            prompt="Write a Python function to paginate API results.",
+            expected_intent="Implement pagination in Python",
+            expected_task="Write a Python pagination function",
+            category="coding",
+            difficulty="hard",
+        ),
+        EvaluationExample(
+            prompt="Act as a senior PM and prioritize a roadmap.",
+            expected_intent="Prioritize a roadmap",
+            expected_task="Create a product roadmap",
+            category="role-based",
+            difficulty="medium",
+        ),
+        EvaluationExample(
+            prompt="Summarize this long incident report and list the main actions we should take next.",
+            expected_intent="Summarize an incident report",
+            expected_task="Summarize and identify next steps",
+            category="long",
+            difficulty="hard",
+        ),
+    ]
+
+    return EvaluationDataset(version="1.0", examples=examples)

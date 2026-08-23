@@ -127,7 +127,7 @@ From the repository root in PowerShell:
 
 Expected result: `12 passed in 1.72s`
 
-## 6. Phase 3: Evaluation And Quality Measurement
+## 6. Phase 3: Evaluation And Quality Measurement - Completed
 
 ### Goal
 
@@ -150,6 +150,15 @@ Measure whether generated analyses and optimized prompts are useful, not merely 
 - The project can compare two analyzer versions on the same dataset.
 - Quality thresholds are documented before release.
 - Evaluation output is machine-readable as well as human-readable.
+
+### Phase 3 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py`
+
+Expected result: `16 passed in 1.86s`
 
 ## 7. Phase 4: Public Python API And CLI
 
