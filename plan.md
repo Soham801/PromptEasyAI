@@ -161,7 +161,6 @@ From the repository root in PowerShell:
 Expected result: `16 passed in 1.86s`
 
 ## 7. Phase 4: Public Python API And CLI - Completed
-
 ### Goal
 
 Provide a stable interface for developers and a useful local workflow for individual users.
