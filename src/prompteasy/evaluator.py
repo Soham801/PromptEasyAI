@@ -125,13 +125,92 @@ def semantic_evaluation(analysis: PromptAnalysis) -> EvaluationResult:
     )
 
 
+def optimization_evaluation(
+    analysis: PromptAnalysis,
+    optimized_prompt: str | None = None,
+) -> EvaluationResult:
+    """Check that optimization preserves requirements without adding facts."""
+
+    errors: list[str] = []
+    optimized = optimized_prompt or analysis.optimized_prompt
+
+    if _similarity(analysis.original_prompt, optimized) < 0.15:
+        errors.append("optimized_prompt is not materially related to the original prompt")
+
+    source = " ".join(
+        [
+            analysis.original_prompt,
+            *analysis.context,
+            *analysis.constraints,
+            *analysis.output_requirements,
+        ]
+    )
+
+    source_numbers = set(re.findall(r"\b\d+(?:\.\d+)?\b", source))
+    optimized_numbers = set(re.findall(r"\b\d+(?:\.\d+)?\b", optimized))
+    unsupported_numbers = optimized_numbers - source_numbers
+    if unsupported_numbers:
+        errors.append(
+            "optimized_prompt adds unsupported numeric details: "
+            + ", ".join(sorted(unsupported_numbers))
+        )
+
+    source_quotes = set(re.findall(r"['\"]([^'\"]+)['\"]", source))
+    optimized_quotes = set(re.findall(r"['\"]([^'\"]+)['\"]", optimized))
+    unsupported_quotes = optimized_quotes - source_quotes
+    if unsupported_quotes:
+        errors.append("optimized_prompt adds unsupported quoted details")
+
+    for requirement in [*analysis.constraints, *analysis.output_requirements]:
+        if _is_explicit_requirement(requirement) and not _requirement_is_preserved(
+            requirement, optimized
+        ):
+            errors.append(f"optimized_prompt does not preserve requirement: {requirement}")
+
+    return EvaluationResult(valid=len(errors) == 0, errors=errors)
+
+
+def _is_explicit_requirement(requirement: str) -> bool:
+    lowered = requirement.lower()
+    markers = (
+        "must",
+        "do not",
+        "don't",
+        "only",
+        "exactly",
+        "format",
+        "json",
+        "xml",
+        "yaml",
+        "table",
+        "bullet",
+        "maximum",
+        "minimum",
+        "limit",
+    )
+    return any(marker in lowered for marker in markers)
+
+
+def _requirement_is_preserved(requirement: str, optimized: str) -> bool:
+    requirement_tokens = _tokenize(requirement)
+    optimized_tokens = _tokenize(optimized)
+    if not requirement_tokens:
+        return True
+    return len(requirement_tokens & optimized_tokens) / len(requirement_tokens) >= 0.5
+
+
 def evaluate_analysis(analysis: PromptAnalysis) -> EvaluationResult:
     structural = structural_evaluation(analysis)
     semantic = semantic_evaluation(analysis)
+    optimization = (
+        optimization_evaluation(analysis)
+        if structural.valid
+        else EvaluationResult(valid=False, errors=[])
+    )
 
-    errors = structural.errors + semantic.errors
+    errors = structural.errors + semantic.errors + optimization.errors
     return EvaluationResult(
-        valid=structural.valid and semantic.valid,
+        valid=structural.valid and semantic.valid and optimization.valid,
         errors=errors,
     )
 

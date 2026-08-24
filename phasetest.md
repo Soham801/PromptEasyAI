@@ -123,7 +123,7 @@ Expected result:
 
 This verifies the in-memory history API, saved prompt entries, and personalization preferences that support user retention and style customization.
 
-## Phase 8: Prompt Optimization Core Hardening
+## Phase 8: Prompt Optimization Core Hardening - Completed
 
 Run from the repository root:
 
@@ -135,7 +135,7 @@ cd C:\PromptEasyAI
 Expected result:
 
 ```text
-27 passed in 2.12s
+31 passed in 1.55s
 ```
 
-This is the next milestone and focuses on optimizer hardening, intent-preservation validation, and no-fabrication checks to match the V0.1 product definition.
+This verifies the provider-agnostic optimizer contract, intent-related output validation, preservation of explicit requirements, no-fabrication checks, and the offline-safe service/API workflow.

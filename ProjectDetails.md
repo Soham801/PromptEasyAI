@@ -7,7 +7,7 @@
 > currently being built, and what the long-term product is intended to
 > become.
 >
-> **Current project phase:** Phase 1.5 --- active development\
+> **Current project phase:** Phase 8 --- optimization core hardening\
 > **Current baseline:** Restarted from a clean, explicitly tracked Phase
 > 1.5 baseline on 2026-08-15\
 > **Current core version target:** V0.1\
@@ -257,6 +257,10 @@ Do not prematurely build:
 
 The first objective is to prove that the **prompt optimization core
 works reliably**.
+
+The delivery roadmap is maintained in `plan.md`, and phase validation
+commands are maintained in `phasetest.md`. This document remains the
+canonical reference for product purpose, scope, and architecture.
 
 ------------------------------------------------------------------------
 

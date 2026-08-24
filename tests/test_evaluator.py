@@ -5,6 +5,7 @@ from prompteasy.evaluator import (
     EvaluationReport,
     create_evaluation_dataset,
     evaluate_analysis,
+    optimization_evaluation,
     semantic_evaluation,
     structural_evaluation,
 )
@@ -123,3 +124,45 @@ def test_evaluation_report_produces_pass_rates():
     assert valid_result.pass_rate == 1.0
     assert dataset.version == "1.0"
     assert any(example.category for example in dataset.examples)
+
+
+def test_optimization_evaluation_rejects_fabricated_numeric_detail():
+    analysis = PromptAnalysis(
+        schema_version="1.0",
+        original_prompt="Summarize this incident report.",
+        intent="Understand an incident report",
+        task="Summarize an incident report",
+        context=[],
+        constraints=[],
+        output_requirements=[],
+        ambiguities=[],
+        missing_information=[],
+        optimization_opportunities=[],
+        optimized_prompt="Summarize this incident report in 3 paragraphs.",
+    )
+
+    result = optimization_evaluation(analysis)
+
+    assert result.valid is False
+    assert any("unsupported numeric" in error for error in result.errors)
+
+
+def test_optimization_evaluation_preserves_explicit_format_requirement():
+    analysis = PromptAnalysis(
+        schema_version="1.0",
+        original_prompt="Compare PostgreSQL and MongoDB.",
+        intent="Choose between databases",
+        task="Compare PostgreSQL and MongoDB",
+        context=[],
+        constraints=[],
+        output_requirements=["Return the comparison as JSON"],
+        ambiguities=[],
+        missing_information=[],
+        optimization_opportunities=[],
+        optimized_prompt="Compare PostgreSQL and MongoDB and explain the differences.",
+    )
+
+    result = optimization_evaluation(analysis)
+
+    assert result.valid is False
+    assert any("preserve requirement" in error for error in result.errors)

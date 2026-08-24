@@ -308,7 +308,7 @@ Expected result: `27 passed in 2.12s`
 
 > Verified: the API now supports in-memory analysis history and personalization preferences, and the offline test suite remains green.
 
-## 11. Phase 8: Prompt Optimization Core Hardening - Next
+## 11. Phase 8: Prompt Optimization Core Hardening - Completed
 
 ### Goal
 
@@ -324,6 +324,13 @@ Make the optimization layer match the V0.1 definition in `ProjectDetails.md`: pr
 - Ensure the final optimized prompt is always a prompt for a downstream model, never the answer to the user task.
 - Keep configuration and provider selection model-aware without entangling core logic with Groq internals.
 
+### Completed Implementation
+
+- Added the provider-agnostic `PromptOptimizer` protocol and `ProviderPromptOptimizer` implementation.
+- Added the public `optimize_prompt` API wrapper.
+- Added deterministic validation for intent relation, unsupported numeric or quoted details, and explicit requirement preservation.
+- Added regression tests for fabricated context, output-format drift, and provider-backed optimization.
+
 ### Acceptance Criteria
 
 - The optimizer preserves the original request semantics rather than changing the task.
@@ -336,11 +343,13 @@ Make the optimization layer match the V0.1 definition in `ProjectDetails.md`: pr
 From the repository root in PowerShell:
 
 1. `cd C:\PromptEasyAI`
-2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py tests/test_backend.py`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_optimizer.py tests/test_provider.py tests/test_cli.py tests/test_backend.py`
 
-Expected result: `27 passed in 2.12s` and new optimizer-focused tests added for intent-preservation and no-fabrication cases.
+Expected result: `31 passed in 1.55s`.
 
-## 12. Phase 9: Production Readiness And Security
+> Verified: the optimizer contract and no-fabrication checks are implemented, and the default test suite remains offline-safe.
+
+## 12. Phase 9: Production Readiness And Security - Next
 
 ### Goal
 
