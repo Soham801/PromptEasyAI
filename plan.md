@@ -224,7 +224,11 @@ From the repository root in PowerShell:
 
 Expected result: `24 passed in 3.63s`
 
-## 9. Phase 6: User Interface
+> Verified against the current repository state: the FastAPI service is present in `src/prompteasy/service.py`, and the backend endpoint checks live in `tests/test_backend.py`.
+>
+> Note: the default suite should exclude live Groq probes such as `tests/test_structured_output.py` from the standard CI run; those are intentionally network-dependent and should be run only in opt-in integration scenarios.
+
+## 9. Phase 6: User Interface - Next Up
 
 ### Goal
 
