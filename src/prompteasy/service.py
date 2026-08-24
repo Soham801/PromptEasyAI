@@ -318,14 +318,14 @@ INDEX_HTML = """
       function renderAnalysis(data) {
         const sections = [
           ['Original prompt', data.original_prompt || '', 'original'],
-          ['Intent', data.intent || ''],
-          ['Task', data.task || ''],
-          ['Context', renderList(data.context)],
-          ['Constraints', renderList(data.constraints)],
-          ['Output requirements', renderList(data.output_requirements)],
-          ['Ambiguities', renderList(data.ambiguities)],
-          ['Missing information', renderList(data.missing_information)],
-          ['Optimization opportunities', renderList(data.optimization_opportunities)],
+          ['Intent', data.intent || '', false],
+          ['Task', data.task || '', false],
+          ['Context', renderList(data.context), true],
+          ['Constraints', renderList(data.constraints), true],
+          ['Output requirements', renderList(data.output_requirements), true],
+          ['Ambiguities', renderList(data.ambiguities), true],
+          ['Missing information', renderList(data.missing_information), true],
+          ['Optimization opportunities', renderList(data.optimization_opportunities), true],
           ['Optimized prompt', data.optimized_prompt || '', 'featured']
         ];
 
@@ -333,6 +333,8 @@ INDEX_HTML = """
           let markup = '';
           if (label === 'Optimized prompt') {
             markup = '<textarea id="optimized-editor" class="optimized-editor" aria-label="Editable optimized prompt">' + escapeHtml(value) + '</textarea>';
+          } else if (variant === true) {
+            markup = value;
           } else if (typeof value === 'string') {
             markup = value ? '<p>' + escapeHtml(value) + '</p>' : '<div class="empty">None provided.</div>';
           } else {
