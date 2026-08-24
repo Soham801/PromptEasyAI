@@ -87,8 +87,8 @@ INDEX_HTML = """
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: Arial, sans-serif;
-        background: linear-gradient(180deg, #020817 0%, #0f172a 100%);
+        font-family: "Trebuchet MS", sans-serif;
+        background: radial-gradient(circle at top right, #164e63 0%, transparent 34%), linear-gradient(180deg, #07111f 0%, #10253a 100%);
         color: var(--text);
       }
       .shell {
@@ -196,6 +196,32 @@ INDEX_HTML = """
         word-break: break-word;
         font-family: inherit;
       }
+      .result-block.featured {
+        grid-column: 1 / -1;
+        border-color: var(--accent-strong);
+      }
+      .optimized-editor {
+        width: 100%;
+        min-height: 150px;
+        resize: vertical;
+        border-radius: 8px;
+        background: #0b1d2d;
+        border: 1px solid var(--accent-strong);
+        color: var(--text);
+        padding: 12px;
+        font: inherit;
+        line-height: 1.5;
+      }
+      .quality-badge {
+        display: inline-flex;
+        margin-top: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        color: #052e16;
+        background: var(--success);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
       ul {
         margin: 0;
         padding-left: 18px;
@@ -252,7 +278,7 @@ INDEX_HTML = """
               <button type="button" class="secondary" id="export-button">Export JSON</button>
             </div>
           </div>
-          <div id="analysis-output" class="empty">No analysis yet.</div>
+          <div id="analysis-output" class="empty" aria-live="polite">No analysis yet.</div>
           <div class="feedback-row" id="feedback-row">
             <button type="button" class="secondary" data-feedback="useful">Useful</button>
             <button type="button" class="secondary" data-feedback="needs-work">Needs work</button>
@@ -291,7 +317,7 @@ INDEX_HTML = """
 
       function renderAnalysis(data) {
         const sections = [
-          ['Original prompt', data.original_prompt || ''],
+          ['Original prompt', data.original_prompt || '', 'original'],
           ['Intent', data.intent || ''],
           ['Task', data.task || ''],
           ['Context', renderList(data.context)],
@@ -300,21 +326,24 @@ INDEX_HTML = """
           ['Ambiguities', renderList(data.ambiguities)],
           ['Missing information', renderList(data.missing_information)],
           ['Optimization opportunities', renderList(data.optimization_opportunities)],
-          ['Optimized prompt', data.optimized_prompt || '']
+          ['Optimized prompt', data.optimized_prompt || '', 'featured']
         ];
 
-        const blocks = sections.map(([label, value]) => {
+        const blocks = sections.map(([label, value, variant]) => {
           let markup = '';
-          if (typeof value === 'string') {
+          if (label === 'Optimized prompt') {
+            markup = '<textarea id="optimized-editor" class="optimized-editor" aria-label="Editable optimized prompt">' + escapeHtml(value) + '</textarea>';
+          } else if (typeof value === 'string') {
             markup = value ? '<p>' + escapeHtml(value) + '</p>' : '<div class="empty">None provided.</div>';
           } else {
             markup = value;
           }
 
           return `
-            <div class="result-block">
+            <div class="result-block ${variant || ''}">
               <h3>${escapeHtml(label)}</h3>
               ${markup}
+              ${label === 'Optimized prompt' ? '<span class="quality-badge" id="quality-badge">Validated for intent and unsupported details</span>' : ''}
             </div>
           `;
         }).join('');
@@ -387,16 +416,18 @@ INDEX_HTML = """
       resetButton.addEventListener('click', resetView);
 
       copyButton.addEventListener('click', async () => {
-        if (!lastAnalysis || !lastAnalysis.optimized_prompt) {
+        const editor = document.getElementById('optimized-editor');
+        const optimizedPrompt = editor ? editor.value.trim() : lastAnalysis && lastAnalysis.optimized_prompt;
+        if (!optimizedPrompt) {
           return;
         }
 
         try {
-          await navigator.clipboard.writeText(lastAnalysis.optimized_prompt);
+          await navigator.clipboard.writeText(optimizedPrompt);
           setStatus('Prompt copied', 'success');
         } catch (error) {
           const textArea = document.createElement('textarea');
-          textArea.value = lastAnalysis.optimized_prompt;
+          textArea.value = optimizedPrompt;
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
@@ -410,7 +441,9 @@ INDEX_HTML = """
           return;
         }
 
-        const blob = new Blob([JSON.stringify(lastAnalysis, null, 2)], { type: 'application/json' });
+        const editor = document.getElementById('optimized-editor');
+        const exportData = { ...lastAnalysis, optimized_prompt: editor ? editor.value : lastAnalysis.optimized_prompt };
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;

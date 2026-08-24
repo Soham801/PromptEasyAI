@@ -30,10 +30,11 @@ The analyzer must:
 - FastAPI health metadata, request IDs, metrics, rate limiting, and clean validation errors.
 - Offline-safe automated test suite.
 
-### Next: Phase 10 Interface Polish
+### Current: Phase 10 Interface Polish - In Progress
 
 - Improve responsive layout, accessibility, comparison, editing, and browser-level coverage.
 - Preserve the existing FastAPI contract while making the interface ready for repeated user workflows.
+- The optimized prompt is editable, visibly validated, and used by copy/export actions.
 
 ### Following: Phase 11 Public Deployment
 

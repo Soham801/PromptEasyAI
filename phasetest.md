@@ -174,3 +174,20 @@ Expected result:
 ```
 
 These checks cover request IDs, health metadata, request metrics, bounded request protection, and clean invalid-input responses.
+
+## Phase 10: Interface Polish And User Workflow - In Progress
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_backend.py
+```
+
+Expected result:
+
+```text
+9 passed
+```
+
+This verifies the polished UI contract, including editable optimized output, visible validation status, accessible live output, and backend compatibility. Browser-level desktop/mobile automation remains the final Phase 10 task.

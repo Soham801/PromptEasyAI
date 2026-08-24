@@ -7,7 +7,7 @@
 > currently being built, and what the long-term product is intended to
 > become.
 >
-> **Current project phase:** Phase 9 --- production readiness baseline\
+> **Current project phase:** Phase 10 --- interface polish and user workflow\
 > **Current baseline:** Phase 9 V0.1 operational baseline verified on
 > 2026-08-24\
 > **Current core version target:** V0.1\
@@ -260,7 +260,10 @@ works reliably**.
 
 The delivery roadmap is maintained in `plan.md`, and phase validation
 commands are maintained in `phasetest.md`. This document remains the
-canonical reference for product purpose, scope, and architecture.
+canonical reference for product purpose, scope, and architecture. The
+current UI supports editable optimized prompts, validation status, and
+copy/export workflows while browser-level desktop and mobile checks are
+still pending.
 
 ------------------------------------------------------------------------
 

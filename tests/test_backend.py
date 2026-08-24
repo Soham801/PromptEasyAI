@@ -33,6 +33,9 @@ def test_root_page_serves_ui():
     assert "Export JSON" in response.text
     assert "Useful" in response.text
     assert "Needs work" in response.text
+    assert 'id="optimized-editor"' in response.text
+    assert "Validated for intent and unsupported details" in response.text
+    assert "aria-live=\"polite\"" in response.text
 
 
 def test_analyze_endpoint_returns_valid_analysis():
