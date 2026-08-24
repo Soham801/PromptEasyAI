@@ -2,6 +2,8 @@
 
 This file documents the exact commands used to validate each completed phase in this project.
 
+> Note: the live Groq structured-output probe is now an opt-in integration test. It is skipped by default and only runs when `PROMPTEASY_RUN_LIVE_GROQ=1` is set, keeping the normal suite deterministic and offline-safe.
+
 ## Phase 1: Core Prompt Analysis Contract
 
 Run from the repository root:
@@ -120,3 +122,20 @@ Expected result:
 ```
 
 This verifies the in-memory history API, saved prompt entries, and personalization preferences that support user retention and style customization.
+
+## Phase 8: Prompt Optimization Core Hardening
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py tests/test_backend.py
+```
+
+Expected result:
+
+```text
+27 passed in 2.12s
+```
+
+This is the next milestone and focuses on optimizer hardening, intent-preservation validation, and no-fabrication checks to match the V0.1 product definition.

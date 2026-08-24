@@ -37,6 +37,17 @@ The repository currently contains:
 
 The current implementation is a working prototype, not yet a complete user-facing product.
 
+## 2.1 Strategic Alignment To The Product Definition
+
+The architecture and roadmap should be read through the lens of the V0.1 product definition in `ProjectDetails.md`:
+
+- The primary product goal is to build a model-agnostic prompt optimization engine, not a general chatbot.
+- The system must preserve user intent, reduce ambiguity, and avoid inventing facts.
+- The core operating contract is: validate input → analyze prompt → improve prompt → validate output.
+- The provider layer is intentionally abstracted, which matches the design goal of keeping the optimization engine independent from a single model vendor.
+- The current codebase is already close to the right architecture: prompt schema validation, provider abstraction, offline deterministic testing, CLI/API/backend, and UI shell are all aligned with the target product direction.
+- The next stage should not broaden into a full SaaS platform prematurely; it should harden the core optimizer loop and the quality validation layer.
+
 ## 3. Phase 0: Engineering Foundation
 
 ### Goal
@@ -297,18 +308,49 @@ Expected result: `27 passed in 2.12s`
 
 > Verified: the API now supports in-memory analysis history and personalization preferences, and the offline test suite remains green.
 
-## 11. Phase 8: Production Readiness
+## 11. Phase 8: Prompt Optimization Core Hardening - Next
 
 ### Goal
 
-Operate PromptEasyAI safely and reliably at real usage levels.
+Make the optimization layer match the V0.1 definition in `ProjectDetails.md`: preserve intent, increase clarity, and avoid unsupported assumptions while improving the prompt for a downstream model.
+
+### Deliverables
+
+- Separate the optimization phase from the analysis phase in a clear, explicit pipeline.
+- Define a provider-agnostic optimization interface distinct from the analysis contract.
+- Add rule-based checks for intent preservation, unsupported assumptions, and missing-information handling.
+- Add semantic quality scoring for optimized prompts beyond structural validation.
+- Add deterministic tests for ambiguous prompts, over-broad rewrites, and fabricated-context scenarios.
+- Ensure the final optimized prompt is always a prompt for a downstream model, never the answer to the user task.
+- Keep configuration and provider selection model-aware without entangling core logic with Groq internals.
+
+### Acceptance Criteria
+
+- The optimizer preserves the original request semantics rather than changing the task.
+- The quality validator can detect when a rewrite invented unsupported facts or drifted from intent.
+- The project continues to run without network calls in the default automated suite.
+- The pipeline matches the architecture described in `ProjectDetails.md`.
+
+### Phase 8 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py tests/test_backend.py`
+
+Expected result: `27 passed in 2.12s` and new optimizer-focused tests added for intent-preservation and no-fabrication cases.
+
+## 12. Phase 9: Production Readiness And Security
+
+### Goal
+
+Operate PromptEasyAI safely and reliably at real usage levels without prematurely expanding into a broad SaaS platform.
 
 ### Deliverables
 
 - Add performance and load testing for the API and UI.
 - Add metrics for latency, provider errors, retry counts, token usage, and evaluation quality.
-- Add alerting and operational dashboards.
-- Add cost controls, quotas, and per-user limits.
+- Add alerting, cost controls, quotas, and operational dashboards.
 - Add dependency and security scanning.
 - Add backup, recovery, and migration procedures for persisted data.
 - Review prompt injection and data exfiltration risks.
@@ -321,7 +363,7 @@ Operate PromptEasyAI safely and reliably at real usage levels.
 - Releases can be reproduced and rolled back.
 - Security, privacy, and operational documentation are complete.
 
-## 12. Recommended Delivery Order
+## 13. Recommended Delivery Order
 
 The smallest useful product should be delivered in this order:
 
@@ -332,15 +374,17 @@ The smallest useful product should be delivered in this order:
 5. Ship Phase 4 as a dependable Python API and CLI.
 6. Build Phase 5 only when external integrations require a service.
 7. Build Phase 6 as the first polished end-user experience.
-8. Add persistence and production operations after the core workflow has proven useful.
+8. Add persistence and personalization after the core workflow has proven useful.
+9. Harden the optimization core and quality rules before broad production expansion.
+10. Add production and security controls only after the core product is stable.
 
-## 13. MVP Definition Of Done
+## 14. MVP Definition Of Done
 
 PromptEasyAI reaches its first MVP when:
 
-- A user can submit a prompt through the CLI or Python API.
-- The system returns strict, validated structured analysis.
-- The system returns a clear optimized prompt that preserves intent and constraints.
+- A user can submit a prompt through the CLI, Python API, or web UI.
+- The system returns a strict, validated analysis and a clear optimized prompt.
+- The optimized prompt preserves intent and avoids unsupported assumptions.
 - Provider failures produce actionable errors and bounded retries.
 - Automated tests run without credentials or network access.
 - Evaluation measures both structural validity and basic semantic quality.
