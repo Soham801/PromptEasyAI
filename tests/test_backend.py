@@ -67,3 +67,46 @@ def test_config_endpoint_returns_provider_settings():
     payload = response.json()
     assert payload["provider"] == "offline"
     assert payload["model"] == "offline-model"
+
+
+def test_history_endpoint_saves_analysis_entries():
+    analysis = {
+        "schema_version": "1.0",
+        "original_prompt": "Explain machine learning",
+        "intent": "Understand machine learning",
+        "task": "Explain machine learning",
+        "context": [],
+        "constraints": [],
+        "output_requirements": [],
+        "ambiguities": [],
+        "missing_information": [],
+        "optimization_opportunities": [],
+        "optimized_prompt": "Explain machine learning in beginner-friendly language.",
+    }
+
+    save_response = client.post(
+        "/api/history",
+        json={"analysis": analysis, "label": "machine learning"},
+    )
+    assert save_response.status_code == 200
+    saved_payload = save_response.json()
+    assert saved_payload["count"] >= 1
+
+    list_response = client.get("/api/history")
+    assert list_response.status_code == 200
+    history_payload = list_response.json()
+    assert len(history_payload["items"]) >= 1
+    assert history_payload["items"][0]["label"] == "machine learning"
+
+
+def test_preferences_endpoint_updates_personalization():
+    response = client.post(
+        "/api/preferences",
+        json={"tone": "friendly", "audience": "beginner", "domain": "education"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tone"] == "friendly"
+    assert payload["audience"] == "beginner"
+    assert payload["domain"] == "education"

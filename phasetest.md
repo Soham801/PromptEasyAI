@@ -86,3 +86,37 @@ Expected result:
 ```
 
 This verifies the health check, analysis endpoint, evaluation endpoint, config endpoint, and HTTP contract for the backend service layer.
+
+## Phase 6: User Interface
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_backend.py tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py
+```
+
+Expected result:
+
+```text
+25 passed in 2.11s
+```
+
+This verifies the FastAPI-served UI shell, the analysis workflow, copy/reset/export controls, and the offline-safe test suite for the user-facing phase.
+
+## Phase 7: Persistence And Personalization
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_backend.py tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py
+```
+
+Expected result:
+
+```text
+27 passed in 2.31s
+```
+
+This verifies the in-memory history API, saved prompt entries, and personalization preferences that support user retention and style customization.

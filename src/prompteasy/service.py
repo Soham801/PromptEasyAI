@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI
@@ -12,6 +13,13 @@ from .models import PromptAnalysis
 
 
 app = FastAPI(title="PromptEasyAI")
+
+_history_store: list[dict[str, Any]] = []
+_preferences_store: dict[str, Any] = {
+    "tone": "neutral",
+    "audience": "general",
+    "domain": "general",
+}
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -397,6 +405,17 @@ class AnalyzeRequest(BaseModel):
     prompt: str
 
 
+class HistoryEntryRequest(BaseModel):
+    analysis: dict[str, Any]
+    label: str | None = None
+
+
+class PreferencesUpdate(BaseModel):
+    tone: str | None = None
+    audience: str | None = None
+    domain: str | None = None
+
+
 class EvaluateRequest(BaseModel):
     analysis: dict[str, Any]
 
@@ -422,3 +441,33 @@ def evaluate_endpoint(payload: EvaluateRequest) -> dict[str, Any]:
     analysis = PromptAnalysis.model_validate(payload.analysis)
     result = evaluate_prompt(analysis)
     return {"valid": result.valid, "errors": result.errors}
+
+
+@app.get("/api/history")
+def list_history() -> dict[str, Any]:
+    return {"items": _history_store}
+
+
+@app.post("/api/history")
+def save_history(payload: HistoryEntryRequest) -> dict[str, Any]:
+    analysis = PromptAnalysis.model_validate(payload.analysis)
+    entry = {
+        "id": len(_history_store) + 1,
+        "label": payload.label or "untitled",
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "analysis": analysis.model_dump(mode="json"),
+    }
+    _history_store.insert(0, entry)
+    return {"count": len(_history_store), "items": _history_store}
+
+
+@app.get("/api/preferences")
+def get_preferences() -> dict[str, Any]:
+    return {"preferences": _preferences_store}
+
+
+@app.post("/api/preferences")
+def update_preferences(payload: PreferencesUpdate) -> dict[str, Any]:
+    for field, value in payload.model_dump(exclude_none=True).items():
+        _preferences_store[field] = value
+    return _preferences_store
