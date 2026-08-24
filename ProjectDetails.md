@@ -7,9 +7,9 @@
 > currently being built, and what the long-term product is intended to
 > become.
 >
-> **Current project phase:** Phase 8 --- optimization core hardening\
-> **Current baseline:** Restarted from a clean, explicitly tracked Phase
-> 1.5 baseline on 2026-08-15\
+> **Current project phase:** Phase 9 --- production readiness baseline\
+> **Current baseline:** Phase 9 V0.1 operational baseline verified on
+> 2026-08-24\
 > **Current core version target:** V0.1\
 > **Primary principle:** Build a minimal, model-agnostic prompt
 > optimization engine first. Do not prematurely build the full product.

@@ -140,7 +140,7 @@ Expected result:
 
 This verifies the provider-agnostic optimizer contract, intent-related output validation, preservation of explicit requirements, no-fabrication checks, and the offline-safe service/API workflow.
 
-## Phase 9: Production Readiness And Security - In Progress
+## Phase 9: Production Readiness And Security - Completed
 
 Run from the repository root:
 
@@ -158,4 +158,19 @@ Optimized prompt: Explain machine learning to a beginner. Provide a clear, direc
 Validation: PASS
 ```
 
-This verifies the first Phase 9 observability slice: a user can inspect the complete offline analysis, optimization, and validation workflow directly from the terminal.
+This verifies the completed Phase 9 V0.1 operational baseline: a user can inspect the complete offline analysis, optimization, and validation workflow directly from the terminal.
+
+The backend production-baseline checks are:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_backend.py
+```
+
+Expected result:
+
+```text
+9 passed
+```
+
+These checks cover request IDs, health metadata, request metrics, bounded request protection, and clean invalid-input responses.

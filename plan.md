@@ -349,7 +349,7 @@ Expected result: `31 passed in 1.55s`.
 
 > Verified: the optimizer contract and no-fabrication checks are implemented, and the default test suite remains offline-safe.
 
-## 12. Phase 9: Production Readiness And Security - In Progress
+## 12. Phase 9: Production Readiness And Security - Completed
 
 ### Goal
 
@@ -358,25 +358,24 @@ Operate PromptEasyAI safely and reliably at real usage levels without prematurel
 ### Deliverables
 
 - Add a human-readable verification command for inspecting the complete offline workflow and validation result.
-- Add performance and load testing for the API and UI.
-- Add metrics for latency, provider errors, retry counts, token usage, and evaluation quality.
-- Add alerting, cost controls, quotas, and operational dashboards.
-- Add dependency and security scanning.
-- Add backup, recovery, and migration procedures for persisted data.
-- Review prompt injection and data exfiltration risks.
-- Establish release versioning, changelog, and rollback procedures.
+- Add request IDs, health metadata, basic request metrics, and bounded request-rate protection.
+- Return clean client errors for invalid prompt and analysis payloads.
+- Document the security, release, and deployment checklist for the V0.1 service.
 
 ### Acceptance Criteria
 
-- Common failures are visible and actionable.
-- Usage and provider costs are bounded.
-- Releases can be reproduced and rolled back.
-- Security, privacy, and operational documentation are complete.
+- Common request failures are visible and actionable.
+- Local request volume is bounded by an in-memory rate limit.
+- The service exposes health and request metrics for deployment probes.
+- Security, privacy, and release prerequisites are documented before public deployment.
 
 ### Completed In This Phase
 
 - Added the `demo` CLI command, which displays the original prompt, analysis fields, optimized prompt, and validation status.
 - Added automated coverage for the human-readable verification output.
+- Added `X-Request-ID` propagation, `/api/metrics`, health metadata, and an in-memory request rate limit.
+- Added clean `400` and `422` responses for invalid API inputs.
+- Added the V0.1 security and release checklist in `SECURITY.md`.
 
 ### Phase 9 Validation Steps
 
@@ -387,7 +386,57 @@ From the repository root in PowerShell:
 
 The command should print the full analysis and end with `Validation: PASS`.
 
-## 13. Recommended Delivery Order
+The backend checks should also pass:
+
+1. `\.venv\Scripts\python -m pytest -q tests/test_backend.py`
+
+Expected result: `9 passed`.
+
+## 13. Phase 10: Interface Polish And User Workflow - Next
+
+### Goal
+
+Turn the working UI into a polished, accessible workspace that is ready for repeated real-user use.
+
+### Deliverables
+
+- Replace the current embedded UI shell with a maintainable frontend structure while preserving the FastAPI API contract.
+- Add clear loading, empty, error, retry, validation, and saved-history states.
+- Improve responsive layout, keyboard navigation, focus states, and screen-reader labels.
+- Add side-by-side original/optimized comparison, editable optimized output, and one-click copy/export feedback.
+- Add visible quality indicators for intent preservation and validation results.
+- Add browser-level tests across desktop and mobile viewport sizes.
+
+### Acceptance Criteria
+
+- A new user can understand and complete the workflow without implementation knowledge.
+- The interface remains usable on mobile and desktop without overlap or hidden content.
+- Browser tests cover the primary success and failure paths.
+
+## 14. Phase 11: Public Deployment And Operations - Planned
+
+### Goal
+
+Make PromptEasyAI safely accessible to real users with reproducible deployment and controlled provider usage.
+
+### Deliverables
+
+- Add production configuration, environment validation, and secret management.
+- Add persistent storage with migrations and backups instead of process-local stores.
+- Add authentication and per-user authorization before exposing saved history.
+- Add external rate limiting, quotas, provider cost controls, and structured log shipping.
+- Add CI checks for tests, packaging, dependency vulnerabilities, and container/deployment health.
+- Deploy the API and frontend behind TLS with monitoring, rollback, and incident procedures.
+- Run load, security, prompt-injection, and data-isolation tests before public release.
+
+### Acceptance Criteria
+
+- A clean deployment can be reproduced from documented configuration.
+- User data and provider credentials are isolated and protected.
+- Operators can detect failures, control costs, and roll back releases.
+- The service is reachable through a stable HTTPS URL.
+
+## 15. Recommended Delivery Order
 
 The smallest useful product should be delivered in this order:
 
@@ -402,7 +451,7 @@ The smallest useful product should be delivered in this order:
 9. Harden the optimization core and quality rules before broad production expansion.
 10. Add production and security controls only after the core product is stable.
 
-## 14. MVP Definition Of Done
+## 16. MVP Definition Of Done
 
 PromptEasyAI reaches its first MVP when:
 

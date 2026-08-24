@@ -10,6 +10,16 @@ def test_health_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    assert response.json()["service"] == "prompteasyai"
+    assert response.headers["X-Request-ID"]
+
+
+def test_metrics_endpoint_reports_requests():
+    response = client.get("/api/metrics")
+
+    assert response.status_code == 200
+    assert response.json()["requests"]["requests"] >= 1
+    assert response.json()["methods"]["GET"] >= 1
 
 
 def test_root_page_serves_ui():
@@ -32,6 +42,13 @@ def test_analyze_endpoint_returns_valid_analysis():
     payload = response.json()
     assert payload["original_prompt"] == "Explain machine learning"
     assert payload["schema_version"] == "1.0"
+
+
+def test_analyze_endpoint_rejects_empty_prompt_cleanly():
+    response = client.post("/api/analyze", json={"prompt": "   "})
+
+    assert response.status_code == 400
+    assert "cannot be empty" in response.json()["detail"]
 
 
 def test_evaluate_endpoint_accepts_analysis_payload():

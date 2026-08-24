@@ -138,6 +138,7 @@ class GroqProvider:
 
 def build_offline_response(prompt: str) -> str:
     prompt_text = prompt.strip() or "prompt"
+    ending = "" if prompt_text.endswith((".", "!", "?")) else "."
     return json.dumps(
         {
             "schema_version": "1.0",
@@ -150,7 +151,7 @@ def build_offline_response(prompt: str) -> str:
             "ambiguities": [],
             "missing_information": [],
             "optimization_opportunities": ["Clarify the audience and desired output."],
-            "optimized_prompt": f"{prompt_text}. Provide a clear, direct, and well-structured response.",
+            "optimized_prompt": f"{prompt_text}{ending} Provide a clear, direct, and well-structured response.",
         }
     )
 

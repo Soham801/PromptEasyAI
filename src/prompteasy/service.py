@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from collections import defaultdict, deque
 from typing import Any
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -13,6 +16,45 @@ from .models import PromptAnalysis
 
 
 app = FastAPI(title="PromptEasyAI")
+
+RATE_LIMIT = 60
+RATE_WINDOW_SECONDS = 60
+_request_counts: dict[str, int] = defaultdict(int)
+_request_times: dict[str, deque[datetime]] = defaultdict(deque)
+_metrics: dict[str, int] = defaultdict(int)
+
+
+@app.middleware("http")
+async def request_observability(request: Request, call_next):
+  request_id = request.headers.get("X-Request-ID") or str(uuid4())
+  client_key = request.client.host if request.client else "unknown"
+  now = datetime.now(timezone.utc)
+  request_times = _request_times[client_key]
+
+  while request_times and (now - request_times[0]).total_seconds() >= RATE_WINDOW_SECONDS:
+    request_times.popleft()
+
+  if len(request_times) >= RATE_LIMIT:
+    _metrics["rate_limited_requests"] += 1
+    return JSONResponse(
+      status_code=429,
+      content={"detail": "Request rate limit exceeded.", "request_id": request_id},
+      headers={"X-Request-ID": request_id, "Retry-After": "60"},
+    )
+
+  request_times.append(now)
+  _request_counts[request.method] += 1
+  _metrics["requests"] += 1
+
+  try:
+    response = await call_next(request)
+  except Exception:
+    _metrics["errors"] += 1
+    raise
+
+  _metrics[f"status_{response.status_code}"] += 1
+  response.headers["X-Request-ID"] = request_id
+  return response
 
 _history_store: list[dict[str, Any]] = []
 _preferences_store: dict[str, Any] = {
@@ -421,8 +463,17 @@ class EvaluateRequest(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+  return {"status": "ok", "service": "prompteasyai", "version": "0.1.0"}
+
+
+@app.get("/api/metrics")
+def metrics() -> dict[str, Any]:
+  return {
+    "requests": dict(_metrics),
+    "methods": dict(_request_counts),
+    "history_entries": len(_history_store),
+  }
 
 
 @app.get("/api/config")
@@ -432,13 +483,19 @@ def config() -> dict[str, str]:
 
 @app.post("/api/analyze")
 def analyze_endpoint(payload: AnalyzeRequest) -> dict[str, Any]:
-    analysis = analyze_prompt(payload.prompt, provider=OfflineProvider())
+    try:
+        analysis = analyze_prompt(payload.prompt, provider=OfflineProvider())
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return analysis.model_dump(mode="json")
 
 
 @app.post("/api/evaluate")
 def evaluate_endpoint(payload: EvaluateRequest) -> dict[str, Any]:
-    analysis = PromptAnalysis.model_validate(payload.analysis)
+    try:
+        analysis = PromptAnalysis.model_validate(payload.analysis)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid analysis payload.") from exc
     result = evaluate_prompt(analysis)
     return {"valid": result.valid, "errors": result.errors}
 
