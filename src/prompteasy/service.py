@@ -86,6 +86,11 @@ INDEX_HTML = """
         font-weight: 700;
         cursor: pointer;
       }
+      button.secondary {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
       button:disabled {
         opacity: 0.6;
         cursor: wait;
@@ -101,9 +106,16 @@ INDEX_HTML = """
         color: var(--muted);
         font-size: 0.92rem;
       }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
       .result-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
       }
       .result-block {
@@ -111,10 +123,18 @@ INDEX_HTML = """
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 14px;
+        min-width: 0;
       }
       .result-block h3 {
         margin: 0 0 12px;
         font-size: 1rem;
+      }
+      .result-block p,
+      .result-block pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: inherit;
       }
       ul {
         margin: 0;
@@ -129,6 +149,12 @@ INDEX_HTML = """
       }
       .error {
         color: var(--error);
+      }
+      .success {
+        color: var(--success);
+      }
+      .hidden {
+        display: none;
       }
       @media (max-width: 800px) {
         .layout, .result-grid {
@@ -146,11 +172,13 @@ INDEX_HTML = """
         <section class="panel">
           <div class="meta">
             <h2>Prompt input</h2>
-            <span id="status" class="status">Ready</span>
+            <span id="status" class="status" aria-live="polite">Ready</span>
           </div>
           <form id="prompt-form">
+            <label for="prompt" class="hidden">Prompt</label>
             <textarea id="prompt" placeholder="Describe the task, audience, constraints, and desired output..."></textarea>
-            <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+            <div class="actions">
+              <button type="button" class="secondary" id="reset-button">Reset</button>
               <button type="submit" id="analyze-button">Analyze</button>
             </div>
           </form>
@@ -159,6 +187,7 @@ INDEX_HTML = """
         <section class="panel">
           <div class="meta">
             <h2>Analysis</h2>
+            <button type="button" class="secondary" id="copy-button">Copy optimized prompt</button>
           </div>
           <div id="analysis-output" class="empty">No analysis yet.</div>
         </section>
@@ -171,18 +200,31 @@ INDEX_HTML = """
       const statusEl = document.getElementById('status');
       const outputEl = document.getElementById('analysis-output');
       const analyzeButton = document.getElementById('analyze-button');
+      const resetButton = document.getElementById('reset-button');
+      const copyButton = document.getElementById('copy-button');
+      let lastAnalysis = null;
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
 
       function renderList(items) {
         if (!items || items.length === 0) {
           return '<div class="empty">None provided.</div>';
         }
-        return '<ul>' + items.map(item => '<li>' + String(item) + '</li>').join('') + '</ul>';
+        return '<ul>' + items.map((item) => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
       }
 
       function renderAnalysis(data) {
-        const fields = [
-          ['Intent', data.intent],
-          ['Task', data.task],
+        const sections = [
+          ['Original prompt', data.original_prompt || ''],
+          ['Intent', data.intent || ''],
+          ['Task', data.task || ''],
           ['Context', renderList(data.context)],
           ['Constraints', renderList(data.constraints)],
           ['Output requirements', renderList(data.output_requirements)],
@@ -192,12 +234,18 @@ INDEX_HTML = """
           ['Optimized prompt', data.optimized_prompt || '']
         ];
 
-        const blocks = fields.map(([label, value]) => {
-          const safeValue = typeof value === 'string' ? value : value;
+        const blocks = sections.map(([label, value]) => {
+          let markup = '';
+          if (typeof value === 'string') {
+            markup = value ? '<p>' + escapeHtml(value) + '</p>' : '<div class="empty">None provided.</div>';
+          } else {
+            markup = value;
+          }
+
           return `
             <div class="result-block">
-              <h3>${label}</h3>
-              ${typeof safeValue === 'string' ? (safeValue ? '<p>' + safeValue + '</p>' : '<div class="empty">None provided.</div>') : safeValue}
+              <h3>${escapeHtml(label)}</h3>
+              ${markup}
             </div>
           `;
         }).join('');
@@ -205,18 +253,36 @@ INDEX_HTML = """
         return '<div class="result-grid">' + blocks + '</div>';
       }
 
+      function setStatus(message, tone = 'default') {
+        statusEl.textContent = message;
+        statusEl.className = 'status';
+        if (tone === 'error') {
+          statusEl.classList.add('error');
+        } else if (tone === 'success') {
+          statusEl.classList.add('success');
+        }
+      }
+
+      function resetView() {
+        promptInput.value = '';
+        outputEl.className = 'empty';
+        outputEl.textContent = 'No analysis yet.';
+        lastAnalysis = null;
+        copyButton.disabled = true;
+        setStatus('Ready');
+      }
+
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const prompt = promptInput.value.trim();
         if (!prompt) {
-          statusEl.textContent = 'Enter a prompt first';
-          statusEl.style.color = 'var(--error)';
+          setStatus('Enter a prompt first', 'error');
           return;
         }
 
-        statusEl.textContent = 'Analyzing...';
-        statusEl.style.color = 'var(--warning)';
+        setStatus('Analyzing...', 'default');
         analyzeButton.disabled = true;
+        copyButton.disabled = true;
 
         try {
           const response = await fetch('/api/analyze', {
@@ -231,17 +297,42 @@ INDEX_HTML = """
           }
 
           const data = await response.json();
+          lastAnalysis = data;
+          outputEl.className = '';
           outputEl.innerHTML = renderAnalysis(data);
-          statusEl.textContent = 'Analysis complete';
-          statusEl.style.color = 'var(--success)';
+          copyButton.disabled = !data.optimized_prompt;
+          setStatus('Analysis complete', 'success');
         } catch (error) {
-          outputEl.innerHTML = '<div class="error">' + String(error.message || error) + '</div>';
-          statusEl.textContent = 'Error';
-          statusEl.style.color = 'var(--error)';
+          outputEl.className = 'error';
+          outputEl.textContent = String(error.message || error);
+          setStatus('Error', 'error');
         } finally {
           analyzeButton.disabled = false;
         }
       });
+
+      resetButton.addEventListener('click', resetView);
+
+      copyButton.addEventListener('click', async () => {
+        if (!lastAnalysis || !lastAnalysis.optimized_prompt) {
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(lastAnalysis.optimized_prompt);
+          setStatus('Prompt copied', 'success');
+        } catch (error) {
+          const textArea = document.createElement('textarea');
+          textArea.value = lastAnalysis.optimized_prompt;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          setStatus('Prompt copied', 'success');
+        }
+      });
+
+      copyButton.disabled = true;
     </script>
   </body>
 </html>
