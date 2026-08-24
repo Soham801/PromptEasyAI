@@ -36,3 +36,14 @@ def test_cli_config_prints_provider_details(capsys):
     assert exit_code == 0
     assert "offline" in captured.out.lower()
     assert "offline-model" in captured.out.lower()
+
+
+def test_cli_demo_prints_human_readable_verification(capsys):
+    exit_code = main(["demo", "--text", "Explain machine learning to a beginner"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "PromptEasyAI Verification" in captured.out
+    assert "Original prompt:" in captured.out
+    assert "Optimized prompt:" in captured.out
+    assert "Validation: PASS" in captured.out

@@ -349,7 +349,7 @@ Expected result: `31 passed in 1.55s`.
 
 > Verified: the optimizer contract and no-fabrication checks are implemented, and the default test suite remains offline-safe.
 
-## 12. Phase 9: Production Readiness And Security - Next
+## 12. Phase 9: Production Readiness And Security - In Progress
 
 ### Goal
 
@@ -357,6 +357,7 @@ Operate PromptEasyAI safely and reliably at real usage levels without prematurel
 
 ### Deliverables
 
+- Add a human-readable verification command for inspecting the complete offline workflow and validation result.
 - Add performance and load testing for the API and UI.
 - Add metrics for latency, provider errors, retry counts, token usage, and evaluation quality.
 - Add alerting, cost controls, quotas, and operational dashboards.
@@ -371,6 +372,20 @@ Operate PromptEasyAI safely and reliably at real usage levels without prematurel
 - Usage and provider costs are bounded.
 - Releases can be reproduced and rolled back.
 - Security, privacy, and operational documentation are complete.
+
+### Completed In This Phase
+
+- Added the `demo` CLI command, which displays the original prompt, analysis fields, optimized prompt, and validation status.
+- Added automated coverage for the human-readable verification output.
+
+### Phase 9 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"`
+
+The command should print the full analysis and end with `Validation: PASS`.
 
 ## 13. Recommended Delivery Order
 

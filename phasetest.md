@@ -139,3 +139,23 @@ Expected result:
 ```
 
 This verifies the provider-agnostic optimizer contract, intent-related output validation, preservation of explicit requirements, no-fabrication checks, and the offline-safe service/API workflow.
+
+## Phase 9: Production Readiness And Security - In Progress
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"
+```
+
+Expected output includes:
+
+```text
+PromptEasyAI Verification
+Original prompt: Explain machine learning to a beginner
+Optimized prompt: Explain machine learning to a beginner. Provide a clear, direct, and well-structured response.
+Validation: PASS
+```
+
+This verifies the first Phase 9 observability slice: a user can inspect the complete offline analysis, optimization, and validation workflow directly from the terminal.

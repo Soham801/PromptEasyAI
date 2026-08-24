@@ -23,6 +23,12 @@ def _build_parser() -> argparse.ArgumentParser:
     config.add_argument("--provider", default="offline")
     config.add_argument("--model", default="offline-model")
 
+    demo = subparsers.add_parser(
+        "demo",
+        help="Show a human-readable prompt optimization result",
+    )
+    demo.add_argument("--text", dest="text", required=True)
+
     return parser
 
 
@@ -59,8 +65,36 @@ def main(argv: list[str] | None = None) -> int:
         }))
         return 0
 
+    if args.command == "demo":
+        analysis = analyze_prompt(args.text, provider=OfflineProvider())
+        result = evaluate_prompt(analysis)
+
+        print("PromptEasyAI Verification")
+        print("=" * 28)
+        print(f"Original prompt: {analysis.original_prompt}")
+        print(f"Intent: {analysis.intent}")
+        print(f"Task: {analysis.task}")
+        print(f"Context: {_format_items(analysis.context)}")
+        print(f"Constraints: {_format_items(analysis.constraints)}")
+        print(f"Output requirements: {_format_items(analysis.output_requirements)}")
+        print(f"Ambiguities: {_format_items(analysis.ambiguities)}")
+        print(f"Missing information: {_format_items(analysis.missing_information)}")
+        print(
+            "Optimization opportunities: "
+            + _format_items(analysis.optimization_opportunities)
+        )
+        print(f"Optimized prompt: {analysis.optimized_prompt}")
+        print(f"Validation: {'PASS' if result.valid else 'FAIL'}")
+        if result.errors:
+            print("Validation errors: " + "; ".join(result.errors))
+        return 0 if result.valid else 1
+
     parser.error("Unsupported command")
     return 2
+
+
+def _format_items(items: list[str]) -> str:
+    return ", ".join(items) if items else "none"
 
 
 if __name__ == "__main__":

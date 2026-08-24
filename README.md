@@ -98,6 +98,14 @@ uv run python main.py
 
 Enter a prompt when requested. The CLI prints the original prompt, its structured analysis, optimization opportunities, and the optimized prompt.
 
+For a deterministic, human-readable verification output without network access:
+
+```powershell
+\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"
+```
+
+This displays the detected intent, task, ambiguities, missing information, optimized prompt, and final validation status.
+
 ## Library Usage
 
 ```python
