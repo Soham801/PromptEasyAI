@@ -12,6 +12,14 @@ def test_health_endpoint():
     assert response.json()["status"] == "ok"
 
 
+def test_root_page_serves_ui():
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "PromptEasyAI" in response.text
+    assert "Analyze" in response.text
+
+
 def test_analyze_endpoint_returns_valid_analysis():
     response = client.post("/api/analyze", json={"prompt": "Explain machine learning"})
 

@@ -228,7 +228,7 @@ Expected result: `24 passed in 3.63s`
 >
 > Note: the default suite should exclude live Groq probes such as `tests/test_structured_output.py` from the standard CI run; those are intentionally network-dependent and should be run only in opt-in integration scenarios.
 
-## 9. Phase 6: User Interface - Next Up
+## 9. Phase 6: User Interface - In Progress
 
 ### Goal
 
@@ -251,6 +251,17 @@ Give users an efficient workspace to improve prompts and act on the result.
 - The optimized prompt can be copied in one action.
 - No important content overlaps or disappears on mobile or desktop.
 - UI tests cover the primary workflow and failure states.
+
+### Phase 6 Validation Steps
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. `\.venv\Scripts\python -m pytest -q tests/test_backend.py tests/test_analyzer.py tests/test_evaluator.py tests/test_provider.py tests/test_cli.py`
+
+Expected result: `25 passed in 2.11s`
+
+> The current Phase 6 milestone adds the web UI shell to the FastAPI service and verifies the primary analysis workflow through the backend test suite.
 
 ## 10. Phase 7: Persistence And Personalization
 

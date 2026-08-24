@@ -1,3 +1,5 @@
+__test__ = False
+
 from prompteasy.llm import GroqProvider
 from prompteasy.models import PromptAnalysis
 
