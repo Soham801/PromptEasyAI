@@ -2,7 +2,7 @@
 
 PromptEasyAI analyzes a user's raw prompt and produces a clearer, more effective version for use with another large language model. It identifies the user's intent, task, context, constraints, output requirements, ambiguities, and missing information before returning a ready-to-use optimized prompt.
 
-The project is currently a Python library with a command-line interface. Groq provides the language model backend, while Pydantic validates the structured response.
+The project currently includes a Python library, CLI, and FastAPI web interface. Groq provides the live language model backend, while the offline provider makes local verification deterministic and network-free.
 
 ## Objective
 
@@ -39,6 +39,8 @@ The analyzer must:
 ### Following: Phase 11 Public Deployment
 
 - Add authentication, persistent storage, secret management, HTTPS deployment, monitoring, quotas, and rollback procedures.
+
+See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
 
 ## How The System Works
 
@@ -77,6 +79,12 @@ From the repository root:
 uv sync
 ```
 
+Or install the package and its declared dependencies into the existing virtual environment:
+
+```powershell
+.\.venv\Scripts\python -m pip install -e .
+```
+
 Create a `.env` file in the repository root:
 
 ```env
@@ -86,6 +94,24 @@ GROQ_API_KEY=your_groq_api_key
 Do not commit `.env` or expose the API key in source code.
 
 ## Command-Line Usage
+
+## Run The Web Interface
+
+From the repository root, start the local FastAPI server:
+
+```powershell
+.\.venv\Scripts\python -m uvicorn prompteasy.service:app --reload
+```
+
+Open http://127.0.0.1:8000 in a browser. Enter a prompt, select **Analyze**, edit the optimized prompt if needed, then use **Copy optimized prompt** or **Export JSON**. The current web UI uses the deterministic offline provider, so it works without an API key.
+
+Useful service endpoints:
+
+- http://127.0.0.1:8000/health
+- http://127.0.0.1:8000/docs
+- http://127.0.0.1:8000/api/metrics
+
+Stop the server with `Ctrl+C`.
 
 Run the interactive CLI:
 
@@ -102,6 +128,29 @@ For a deterministic, human-readable verification output without network access:
 ```
 
 This displays the detected intent, task, ambiguities, missing information, optimized prompt, and final validation status.
+
+## Use The Live Groq Model
+
+The interactive CLI uses `GroqProvider` and requires `GROQ_API_KEY` in `.env`:
+
+```powershell
+.\.venv\Scripts\python main.py
+```
+
+For a library call with an explicit model:
+
+```python
+from prompteasy import PromptAnalyzer
+from prompteasy.llm import GroqProvider
+
+provider = GroqProvider(model="openai/gpt-oss-20b")
+analysis = PromptAnalyzer(provider=provider).analyze(
+	"Create a concise onboarding guide for a new Python developer."
+)
+print(analysis.optimized_prompt)
+```
+
+Live provider probes are intentionally excluded from the default test suite. Run them only when credentials and network access are available.
 
 ## Library Usage
 
@@ -179,9 +228,11 @@ The default suite uses a fake provider for the optimized prompt unit test. The f
 main.py                    Interactive CLI entry point
 src/prompteasy/            Installable Python package
   analyzer.py              Groq request and structured response handling
-  evaluator.py             Basic analysis validation
+	evaluator.py              Quality and no-fabrication validation
   llm.py                   Groq provider and environment configuration
   models.py                Pydantic response models
+	optimizer.py             Provider-agnostic optimization contract
+	service.py               FastAPI API and web interface
 tests/                     Automated and manual test scripts
 tests/evaluation/          Evaluation prompts and batch runner
 pyproject.toml             Package metadata and tool configuration

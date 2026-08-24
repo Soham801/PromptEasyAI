@@ -414,6 +414,7 @@ Turn the working UI into a polished, accessible workspace that is ready for repe
 - Updated copy and export actions to use the user's edited optimized prompt.
 - Improved visual hierarchy, responsive result layout, focusable form controls, and live output announcements.
 - Added regression assertions for the browser-facing UI contract.
+- Verified the documented Uvicorn launch path and `/health` response locally.
 
 ### Acceptance Criteria
 

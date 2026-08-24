@@ -160,6 +160,15 @@ Validation: PASS
 
 This verifies the completed Phase 9 V0.1 operational baseline: a user can inspect the complete offline analysis, optimization, and validation workflow directly from the terminal.
 
+The local interface launch check is:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m uvicorn prompteasy.service:app --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000` and confirm the PromptEasyAI interface loads. Confirm `http://127.0.0.1:8000/health` returns service status metadata. Stop the server with `Ctrl+C` after verification.
+
 The backend production-baseline checks are:
 
 ```powershell
