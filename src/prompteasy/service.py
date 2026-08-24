@@ -113,6 +113,16 @@ INDEX_HTML = """
         margin-top: 16px;
         flex-wrap: wrap;
       }
+      .feedback-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .feedback-row button {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+      }
       .result-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -187,9 +197,16 @@ INDEX_HTML = """
         <section class="panel">
           <div class="meta">
             <h2>Analysis</h2>
-            <button type="button" class="secondary" id="copy-button">Copy optimized prompt</button>
+            <div class="actions" style="margin-top: 0;">
+              <button type="button" class="secondary" id="copy-button">Copy optimized prompt</button>
+              <button type="button" class="secondary" id="export-button">Export JSON</button>
+            </div>
           </div>
           <div id="analysis-output" class="empty">No analysis yet.</div>
+          <div class="feedback-row" id="feedback-row">
+            <button type="button" class="secondary" data-feedback="useful">Useful</button>
+            <button type="button" class="secondary" data-feedback="needs-work">Needs work</button>
+          </div>
         </section>
       </div>
     </div>
@@ -202,6 +219,8 @@ INDEX_HTML = """
       const analyzeButton = document.getElementById('analyze-button');
       const resetButton = document.getElementById('reset-button');
       const copyButton = document.getElementById('copy-button');
+      const exportButton = document.getElementById('export-button');
+      const feedbackRow = document.getElementById('feedback-row');
       let lastAnalysis = null;
 
       function escapeHtml(value) {
@@ -269,6 +288,8 @@ INDEX_HTML = """
         outputEl.textContent = 'No analysis yet.';
         lastAnalysis = null;
         copyButton.disabled = true;
+        exportButton.disabled = true;
+        feedbackRow.style.opacity = '0.5';
         setStatus('Ready');
       }
 
@@ -301,6 +322,8 @@ INDEX_HTML = """
           outputEl.className = '';
           outputEl.innerHTML = renderAnalysis(data);
           copyButton.disabled = !data.optimized_prompt;
+          exportButton.disabled = !data.optimized_prompt;
+          feedbackRow.style.opacity = '1';
           setStatus('Analysis complete', 'success');
         } catch (error) {
           outputEl.className = 'error';
@@ -332,7 +355,33 @@ INDEX_HTML = """
         }
       });
 
+      exportButton.addEventListener('click', () => {
+        if (!lastAnalysis) {
+          return;
+        }
+
+        const blob = new Blob([JSON.stringify(lastAnalysis, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'prompteasy-analysis.json';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        setStatus('Analysis exported', 'success');
+      });
+
+      feedbackRow.querySelectorAll('button').forEach((button) => {
+        button.addEventListener('click', () => {
+          const label = button.dataset.feedback;
+          setStatus(label === 'useful' ? 'Marked useful' : 'Feedback recorded', 'success');
+        });
+      });
+
       copyButton.disabled = true;
+      exportButton.disabled = true;
+      feedbackRow.style.opacity = '0.5';
     </script>
   </body>
 </html>

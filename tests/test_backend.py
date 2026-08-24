@@ -20,6 +20,9 @@ def test_root_page_serves_ui():
     assert "Analyze" in response.text
     assert "Copy optimized prompt" in response.text
     assert "Reset" in response.text
+    assert "Export JSON" in response.text
+    assert "Useful" in response.text
+    assert "Needs work" in response.text
 
 
 def test_analyze_endpoint_returns_valid_analysis():
