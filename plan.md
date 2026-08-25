@@ -522,7 +522,7 @@ provider/model pairs and persists JSON artifacts.
 ### Current Status And Next Steps
 
 The implementation baseline is green: the full offline suite passes with
-`42 passed, 1 skipped`, and the benchmark gate passes all 10 offline cases.
+`46 passed, 2 skipped`, and the benchmark gate passes all 10 offline cases.
 Phase 12 is release-complete for the offline quality gate. The GitHub
 Actions workflow runs tests, executes a baseline/candidate comparison, and
 uploads the JSON artifact while enforcing the thresholds.

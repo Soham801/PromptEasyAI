@@ -15,7 +15,7 @@ jobs:
       - name: Install package
         run: python -m pip install .
       - name: Run tests
-        run: python -m pytest -q
+        run: python -m pytest -q tests
       - name: Run benchmark comparison gate
         run: python -m prompteasy.cli benchmark --compare offline:offline-baseline --compare offline:offline-candidate --output reports/benchmark-comparison.json
       - name: Upload benchmark report

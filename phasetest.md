@@ -2,7 +2,7 @@
 
 This file documents the exact commands used to validate completed phases and the active Phase 12 quality gate.
 
-> Note: the live Groq structured-output probe is now an opt-in integration test. It is skipped by default and only runs when `PROMPTEASY_RUN_LIVE_GROQ=1` is set, keeping the normal suite deterministic and offline-safe.
+> Note: live Groq probes are opt-in integration tests. They are skipped by default and only run when `PROMPTEASY_RUN_LIVE_GROQ=1` is set, keeping the normal suite deterministic and offline-safe.
 
 ## Phase 1: Core Prompt Analysis Contract
 
@@ -274,7 +274,7 @@ cd C:\PromptEasyAI
 .\.venv\Scripts\python -m pytest -q
 ```
 
-Current result: `42 passed, 1 skipped`. The skipped test is the opt-in live Groq probe.
+Current result: `46 passed, 2 skipped`. The skipped tests are the opt-in live Groq probes.
 
 ## Phase 13: Public Deployment And Operations - In Progress
 

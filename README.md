@@ -272,7 +272,7 @@ Run the automated suite:
 uv run pytest -v
 ```
 
-The default suite uses a fake provider for the optimized prompt unit test. The files `tests/test_groq.py` and `tests/test_structured_output.py` are manual live Groq probes and require network access and a valid API key; they are not collected as pytest test functions.
+The default suite uses a fake provider for the optimized prompt unit test. The files `tests/test_groq.py` and `tests/test_structured_output.py` are opt-in live Groq probes and require network access and a valid API key. They are skipped unless `PROMPTEASY_RUN_LIVE_GROQ=1` is set.
 
 ## Project Layout
 
