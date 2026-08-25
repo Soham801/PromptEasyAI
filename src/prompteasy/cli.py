@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 import argparse
 import json
 import sys
-
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
 from .benchmark import compare_benchmarks, run_benchmark, write_report
 
