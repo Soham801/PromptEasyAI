@@ -11,14 +11,14 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
-from .llm import OfflineProvider
+from .config import get_settings
 from .models import PromptAnalysis
 from .optimizer import OptimizationPreferences
 
 
 app = FastAPI(title="PromptEasyAI")
 
-RATE_LIMIT = 60
+RATE_LIMIT = get_settings().request_rate_limit
 RATE_WINDOW_SECONDS = 60
 _request_counts: dict[str, int] = defaultdict(int)
 _request_times: dict[str, deque[datetime]] = defaultdict(deque)
@@ -500,7 +500,8 @@ class EvaluateRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-  return {"status": "ok", "service": "prompteasyai", "version": "0.1.0"}
+  settings = get_settings()
+  return {"status": "ok", "service": "prompteasyai", "version": "0.1.0", "environment": settings.environment}
 
 
 @app.get("/api/metrics")
@@ -521,9 +522,8 @@ def config() -> dict[str, str]:
 def analyze_endpoint(payload: AnalyzeRequest) -> dict[str, Any]:
     try:
         analysis = analyze_prompt(
-            payload.prompt,
-            provider=OfflineProvider(),
-            preferences=OptimizationPreferences(**_preferences_store),
+          payload.prompt,
+          preferences=OptimizationPreferences(**_preferences_store),
         )
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -50,10 +50,11 @@ The analyzer must:
 - Provider/model comparison CLI with persisted JSON reports.
 - CI quality workflow enforcing benchmark and test gates.
 
-### Next: Phase 13 Public Deployment
+### Phase 13: Public Deployment - In Progress
 
-- Review benchmark artifacts across one release cycle.
-- Add authentication, persistent storage, secret management, HTTPS deployment, monitoring, quotas, and rollback procedures.
+- Runtime environment and provider settings are validated at startup.
+- Production rejects the offline provider and includes a container definition.
+- Remaining: authenticated persistence, managed secrets, HTTPS, monitoring, quotas, rollback, and security validation.
 
 See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
 
@@ -132,6 +133,8 @@ $env:PROMPTEASY_MODEL="openai/gpt-oss-20b"
 ```
 
 When `PROMPTEASY_PROVIDER` is set to `groq`, ensure `GROQ_API_KEY` is present in `.env`.
+
+For a production container, set `PROMPTEASY_ENV=production`, provide `GROQ_API_KEY` through the deployment secret manager, and configure `PROMPTEASY_PROVIDER=groq` plus `PROMPTEASY_MODEL`. The service rejects production startup with the offline provider.
 
 Open http://127.0.0.1:8000 in a browser. Enter a prompt, select **Analyze**, edit the optimized prompt if needed, then use **Copy optimized prompt** or **Export JSON**. The current web UI uses the deterministic offline provider, so it works without an API key.
 

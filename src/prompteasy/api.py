@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from .analyzer import PromptAnalyzer
+from .config import get_settings
 from .evaluator import evaluate_analysis, optimization_evaluation
 from .llm import GroqProvider, OfflineProvider
 from .models import PromptAnalysis
@@ -57,24 +57,23 @@ def get_provider_config(provider: Any | None = None) -> dict[str, str]:
             "model": getattr(provider, "model", "unknown"),
         }
 
-    configured = os.getenv("PROMPTEASY_PROVIDER", "offline").strip().lower()
-    if configured not in {"offline", "groq"}:
-        configured = "offline"
+    settings = get_settings()
+    configured = settings.provider
 
     if configured == "groq":
         return {
             "provider": "groq",
-            "model": os.getenv("PROMPTEASY_MODEL", "openai/gpt-oss-20b"),
+            "model": settings.model,
         }
 
-    return {"provider": "offline", "model": "offline-model"}
+    return {"provider": "offline", "model": settings.model}
 
 
 def _build_default_provider() -> Any:
-    configured = os.getenv("PROMPTEASY_PROVIDER", "offline").strip().lower()
+    settings = get_settings()
+    configured = settings.provider
 
     if configured == "groq":
-        model = os.getenv("PROMPTEASY_MODEL", "openai/gpt-oss-20b")
-        return GroqProvider(model=model)
+        return GroqProvider(model=settings.model)
 
-    return OfflineProvider()
+    return OfflineProvider(model=settings.model)

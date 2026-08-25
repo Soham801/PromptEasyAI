@@ -275,3 +275,20 @@ cd C:\PromptEasyAI
 ```
 
 Current result: `42 passed, 1 skipped`. The skipped test is the opt-in live Groq probe.
+
+## Phase 13: Public Deployment And Operations - In Progress
+
+Configuration and container checks:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_config.py tests/test_backend.py
+```
+
+These checks verify offline development defaults, production rejection of the offline provider, rate-limit validation, and environment metadata in `/health`. Build the production image with:
+
+```powershell
+docker build -t prompteasyai:0.1.0 .
+```
+
+Remaining Phase 13 work is authenticated persistence, managed secrets, HTTPS, quotas, monitoring, rollback, vulnerability scanning, load testing, and prompt-injection/data-isolation validation.

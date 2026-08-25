@@ -533,7 +533,7 @@ Next execution order:
 2. Review benchmark results over one release cycle for quality stability.
 3. Start Phase 13 deployment and operations after that review.
 
-## 17. Phase 13: Public Deployment And Operations - Next
+## 17. Phase 13: Public Deployment And Operations - In Progress
 
 ### Goal
 
@@ -547,6 +547,22 @@ Deploy only after optimization quality is stable and measurable.
 - Monitoring, log shipping, rollback playbooks, and incident response.
 - Security and prompt-injection hardening with pre-release validation.
 
+### Completed In This Phase
+
+- Added validated runtime settings for environment, provider, model, and rate limit.
+- Wired the FastAPI service to the configured provider instead of forcing offline mode.
+- Added production protection that rejects the offline provider.
+- Added a production `Dockerfile` and `.dockerignore`.
+- Added focused configuration and health endpoint tests.
+- Updated the security checklist with production configuration requirements.
+
+### Remaining Deliverables
+
+- Move history and preferences to authenticated persistent storage with migrations and backups.
+- Add authentication, authorization, quotas, and external rate limiting.
+- Add managed secrets, HTTPS, monitoring, alerting, rollback procedures, and vulnerability scanning.
+- Complete load testing and prompt-injection/data-isolation validation.
+
 ### Acceptance Criteria
 
 - Deployment is reproducible and secure.
@@ -557,9 +573,10 @@ Deploy only after optimization quality is stable and measurable.
 
 From this point onward, delivery should prioritize quality outcomes over feature breadth:
 
-1. Review Phase 12 provider/model comparison artifacts for one release cycle.
-2. Keep the shared optimization pipeline and adaptive strategies regression-tested.
-3. Start Phase 13 deployment after the quality gates remain stable for that cycle.
+1. Add authenticated persistence and data isolation.
+2. Add managed secrets, HTTPS ingress, quotas, monitoring, and rollback controls.
+3. Run security, load, and provider-cost validation.
+4. Deploy only after those controls pass a release review.
 
 ## 19. Updated Definition Of Done
 

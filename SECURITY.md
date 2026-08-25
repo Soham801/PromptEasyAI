@@ -13,6 +13,9 @@ PromptEasyAI is currently intended for local and controlled deployment. Complete
 
 ## Before Public Deployment
 
+- Set `PROMPTEASY_ENV=production`; production startup rejects the offline provider.
+- Set `PROMPTEASY_PROVIDER=groq` and `PROMPTEASY_MODEL` explicitly, with `GROQ_API_KEY` supplied by the deployment secret manager.
+- Use the supplied `Dockerfile` or an equivalent pinned deployment image and expose only the service port through the ingress layer.
 - Move history and preferences to authenticated, persistent storage with migrations and backups.
 - Store provider secrets in a managed secret store and rotate them regularly.
 - Add authentication, authorization, per-user quotas, and external rate limiting.
