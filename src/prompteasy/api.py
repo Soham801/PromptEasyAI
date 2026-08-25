@@ -7,16 +7,23 @@ from .analyzer import PromptAnalyzer
 from .evaluator import evaluate_analysis, optimization_evaluation
 from .llm import GroqProvider, OfflineProvider
 from .models import PromptAnalysis
-from .optimizer import ProviderPromptOptimizer
+from .optimizer import OptimizationPreferences, ProviderPromptOptimizer
 
 
-def analyze_prompt(prompt: str, provider: Any | None = None) -> PromptAnalysis:
+def analyze_prompt(
+    prompt: str,
+    provider: Any | None = None,
+    preferences: OptimizationPreferences | None = None,
+) -> PromptAnalysis:
     resolved_provider = provider or _build_default_provider()
     analyzer = PromptAnalyzer(provider=resolved_provider)
     analysis = analyzer.analyze(prompt)
 
     try:
-        optimized_prompt = ProviderPromptOptimizer(resolved_provider).optimize(analysis)
+        optimized_prompt = ProviderPromptOptimizer(
+            resolved_provider,
+            preferences=preferences,
+        ).optimize(analysis)
         return analysis.model_copy(update={"optimized_prompt": optimized_prompt})
     except Exception:
         # Fallback to validated analyzer output if optimization fails.

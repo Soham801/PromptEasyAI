@@ -3,7 +3,12 @@ from types import SimpleNamespace
 import pytest
 
 from prompteasy.models import PromptAnalysis
-from prompteasy.optimizer import ProviderPromptOptimizer
+from prompteasy.llm import build_offline_optimized_prompt
+from prompteasy.optimizer import (
+    OptimizationPreferences,
+    ProviderPromptOptimizer,
+    select_optimization_strategy,
+)
 
 
 class FakeOptimizerProvider:
@@ -63,3 +68,55 @@ def test_provider_optimizer_rejects_fabricated_detail():
 
     with pytest.raises(ValueError, match="unsupported numeric"):
         ProviderPromptOptimizer(provider).optimize(build_analysis())
+
+
+def test_optimizer_conditions_instruction_with_preferences():
+    provider = FakeOptimizerProvider(
+        "Explain caching to a beginner using simple language and one analogy."
+    )
+
+    ProviderPromptOptimizer(
+        provider,
+        preferences=OptimizationPreferences(
+            tone="friendly",
+            audience="new developers",
+            domain="web performance",
+        ),
+    ).optimize(build_analysis(output_requirements=[]))
+
+    instruction = provider.last_request["messages"][0]["content"]
+    assert "Use audience: new developers." in instruction
+    assert "Use tone: friendly." in instruction
+    assert "Use domain: web performance." in instruction
+    assert "Use direct optimization" in instruction
+
+
+def test_optimizer_selects_question_first_for_high_impact_missing_information():
+    analysis = build_analysis(
+        missing_information=["Target audience.", "Preferred output format."]
+    )
+
+    assert select_optimization_strategy(analysis) == "question-first"
+
+
+def test_optimizer_selects_other_adaptive_modes_deterministically():
+    assert select_optimization_strategy(build_analysis(constraints=["Use JSON"])) == "constraint-first"
+    assert select_optimization_strategy(build_analysis()) == "format-first"
+    assert select_optimization_strategy(build_analysis(output_requirements=[])) == "direct"
+    assert (
+        select_optimization_strategy(
+            build_analysis(output_requirements=[], task="Analyze the tradeoffs")
+        )
+        == "reasoning-first"
+    )
+
+
+def test_offline_question_first_prompt_asks_before_assuming():
+    result = build_offline_optimized_prompt(
+        "Original prompt:\nWrite an application for me.\n\n"
+        "Use question-first mode: ask for the highest-impact missing details."
+    )
+
+    assert result.startswith("Write an application for me.")
+    assert "ask for the missing details" in result
+    assert "Do not assume answers" in result

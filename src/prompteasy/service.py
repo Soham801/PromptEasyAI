@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
 from .llm import OfflineProvider
 from .models import PromptAnalysis
+from .optimizer import OptimizationPreferences
 
 
 app = FastAPI(title="PromptEasyAI")
@@ -519,7 +520,11 @@ def config() -> dict[str, str]:
 @app.post("/api/analyze")
 def analyze_endpoint(payload: AnalyzeRequest) -> dict[str, Any]:
     try:
-        analysis = analyze_prompt(payload.prompt, provider=OfflineProvider())
+        analysis = analyze_prompt(
+            payload.prompt,
+            provider=OfflineProvider(),
+            preferences=OptimizationPreferences(**_preferences_store),
+        )
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return analysis.model_dump(mode="json")

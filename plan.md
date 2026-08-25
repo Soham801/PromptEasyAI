@@ -453,7 +453,7 @@ Guarantee that every analyzed prompt returns a materially improved optimized pro
 - Optimized prompt passes structural, semantic, and requirement-preservation checks.
 - CLI, API, and web UI all use the same optimization pipeline.
 
-## 15. Phase 11B: Adaptive Optimization Engine - Next
+## 15. Phase 11B: Adaptive Optimization Engine - Completed
 
 ### Goal
 
@@ -461,8 +461,8 @@ Move from static prompt rewriting to adaptive optimization that is robust across
 
 ### Deliverables
 
-- Introduce strategy modes: clarify-first, constraint-first, format-first, and reasoning-first.
-- Select optimization strategy from analysis features (ambiguity level, constraints density, format specificity).
+- Introduce strategy modes: question-first, constraint-first, format-first, reasoning-first, and direct.
+- Select optimization strategy deterministically from analysis features.
 - Add optional audience/tone/domain conditioning from preferences to the optimizer instruction.
 - Add a fallback "question-first" optimized prompt mode when missing information is high-impact.
 

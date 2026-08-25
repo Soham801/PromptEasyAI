@@ -161,6 +161,18 @@ def build_offline_response(prompt: str) -> str:
 
 def build_offline_optimized_prompt(prompt: str) -> str:
     prompt_text = prompt.strip() or "prompt"
+    original_match = re.search(
+        r"Original prompt:\n(.*?)(?:\n\n|\Z)", prompt_text, re.DOTALL
+    )
+    if original_match:
+        original = original_match.group(1).strip()
+        strategy = "question-first" if "question-first mode" in prompt_text.lower() else "direct"
+        if strategy == "question-first":
+            return (
+                f"{original}\n\nBefore completing this request, ask for the missing details that most affect the result, "
+                "including the intended audience and desired output format. Do not assume answers."
+            )
+        prompt_text = original
     return (
         f"{prompt_text}. Be accurate. Ask for missing details. "
         "State assumptions. Follow user constraints and format."
