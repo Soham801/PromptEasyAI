@@ -5,7 +5,7 @@ import json
 import sys
 
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
-from .benchmark import run_benchmark
+from .benchmark import compare_benchmarks, run_benchmark, write_report
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -29,7 +29,14 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     demo.add_argument("--text", dest="text", required=True)
 
-    subparsers.add_parser("benchmark", help="Run the offline quality benchmark")
+    benchmark = subparsers.add_parser("benchmark", help="Run the quality benchmark")
+    benchmark.add_argument(
+        "--compare",
+        action="append",
+        metavar="PROVIDER:MODEL",
+        help="Benchmark a provider/model pair; repeat for candidate comparisons.",
+    )
+    benchmark.add_argument("--output", help="Write the benchmark report to a JSON file.")
 
     return parser
 
@@ -94,9 +101,24 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result.valid else 1
 
     if args.command == "benchmark":
-        report = run_benchmark()
+        if args.compare:
+            pairs = []
+            for value in args.compare:
+                provider, separator, model = value.partition(":")
+                if not separator or not provider or not model:
+                    parser.error("--compare must use PROVIDER:MODEL")
+                pairs.append((provider.lower(), model))
+            report = compare_benchmarks(pairs)
+        else:
+            report = run_benchmark()
+        if args.output:
+            write_report(report, args.output)
         print(json.dumps(report.to_dict()))
-        return 0 if report.release_gate_passed else 1
+        if hasattr(report, "release_gate_passed"):
+            return 0 if report.release_gate_passed else 1
+        return 0 if report.baseline["release_gate_passed"] and all(
+            candidate["release_gate_passed"] for candidate in report.candidates
+        ) else 1
 
     parser.error("Unsupported command")
     return 2

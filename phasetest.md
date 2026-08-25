@@ -235,7 +235,7 @@ cd C:\PromptEasyAI
 
 This verifies deterministic direct, question-first, constraint-first, format-first, and reasoning-first strategies, plus audience, tone, and domain conditioning.
 
-## Phase 12: Quality Benchmark And Release Gates - In Progress
+## Phase 12: Quality Benchmark And Release Gates - Completed
 
 Run the current offline benchmark gate:
 
@@ -252,7 +252,20 @@ pass rate: 1.00
 hallucination risk: 0.00
 ```
 
-The gate requires a pass rate of at least `0.80` and zero hallucination risk. Remaining Phase 12 validation must compare configured provider/model pairs, persist JSON report artifacts, and run the same gate in CI.
+The gate requires a pass rate of at least `0.80` and zero hallucination risk.
+
+Run the baseline/candidate comparison and persist the release artifact:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m prompteasy.cli benchmark --compare offline:baseline --compare offline:candidate --output reports/benchmark-comparison.json
+```
+
+The comparison records dataset version, provider, model, per-metric deltas, and gate status. The GitHub Actions workflow in `.github/workflows/quality.yml` runs the full offline suite, executes this comparison, and uploads the JSON report. Groq comparisons remain opt-in and require credentials and network access.
+
+## Phase 13: Public Deployment And Operations - Next
+
+Review benchmark artifacts across one release cycle before implementing production configuration, secret management, persistent storage, authentication, quotas, monitoring, rollback procedures, and security hardening.
 
 ## Full Offline Regression Suite
 

@@ -475,7 +475,7 @@ Move from static prompt rewriting to adaptive optimization that is robust across
 - Vague prompts produce useful clarifying structure instead of generic wording.
 - Constrained prompts preserve all explicit constraints under automated checks.
 
-## 16. Phase 12: Quality Benchmark And Release Gates - In Progress
+## 16. Phase 12: Quality Benchmark And Release Gates - Completed
 
 ### Goal
 
@@ -506,37 +506,34 @@ Establish measurable quality gates so prompt improvements are provable before re
 - Verified the offline baseline at `10/10` cases passed, pass rate `1.00`,
   and hallucination risk `0.00`.
 
-### Remaining Deliverables
+### Release Note
 
-- Add baseline-versus-candidate comparison reports for each provider/model.
-- Persist benchmark report artifacts for release candidates.
-- Enforce benchmark thresholds in CI.
+All Phase 12 implementation deliverables are complete. Groq comparisons
+remain opt-in because they require credentials and network access.
 
 ### Phase 12 Validation
 
 `\.venv\Scripts\python -m prompteasy.cli benchmark`
 
 Current offline baseline: `10/10` cases passed, pass rate `1.00`, and
-hallucination risk `0.00`. Phase 13 remains deferred until provider/model
-comparison gates are implemented and stable.
+hallucination risk `0.00`. The comparison workflow supports explicit
+provider/model pairs and persists JSON artifacts.
 
 ### Current Status And Next Steps
 
 The implementation baseline is green: the full offline suite passes with
 `42 passed, 1 skipped`, and the benchmark gate passes all 10 offline cases.
-Phase 12 is not release-complete yet because the benchmark has not been
-run and persisted as a comparison across configured provider/model pairs,
-and CI does not yet enforce the thresholds.
+Phase 12 is release-complete for the offline quality gate. The GitHub
+Actions workflow runs tests, executes a baseline/candidate comparison, and
+uploads the JSON artifact while enforcing the thresholds.
 
 Next execution order:
 
-1. Add a provider/model benchmark comparison command using the same dataset.
-2. Persist JSON reports with dataset version, provider, model, metrics, and gate result.
-3. Add CI execution and failure thresholds for pass rate and hallucination risk.
-4. Re-run the full suite and document a stable comparison cycle.
-5. Start Phase 13 deployment and operations after the quality gates remain stable for one release cycle.
+1. Run comparison artifacts for each intended provider/model configuration.
+2. Review benchmark results over one release cycle for quality stability.
+3. Start Phase 13 deployment and operations after that review.
 
-## 17. Phase 13: Public Deployment And Operations - Deferred Until Quality Gates
+## 17. Phase 13: Public Deployment And Operations - Next
 
 ### Goal
 
@@ -560,9 +557,9 @@ Deploy only after optimization quality is stable and measurable.
 
 From this point onward, delivery should prioritize quality outcomes over feature breadth:
 
-1. Complete Phase 12 provider/model comparison reports and CI enforcement.
+1. Review Phase 12 provider/model comparison artifacts for one release cycle.
 2. Keep the shared optimization pipeline and adaptive strategies regression-tested.
-3. Start Phase 13 deployment only after quality gates are stable for at least one release cycle.
+3. Start Phase 13 deployment after the quality gates remain stable for that cycle.
 
 ## 19. Updated Definition Of Done
 

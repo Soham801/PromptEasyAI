@@ -42,19 +42,18 @@ The analyzer must:
 - Optional audience, tone, and domain conditioning.
 - Offline-safe clarification fallback for high-impact missing information.
 
-### Phase 12: Quality Benchmark And Release Gates - In Progress
+### Phase 12: Quality Benchmark And Release Gates - Complete
 
 - Versioned benchmark coverage for vague, adversarial, domain-heavy, and format-critical prompts.
 - Machine-readable quality metrics and a release-gate CLI command.
 - Current offline baseline: 10/10 cases passed with zero hallucination risk.
-- Remaining: provider/model comparison reports, persisted release artifacts, and CI enforcement.
+- Provider/model comparison CLI with persisted JSON reports.
+- CI quality workflow enforcing benchmark and test gates.
 
-### Next: Complete Phase 12 Release Gates
+### Next: Phase 13 Public Deployment
 
-- Compare offline and configured provider/model results using the same benchmark dataset.
-- Persist benchmark JSON reports for release candidates.
-- Fail CI when the pass-rate or hallucination-risk thresholds regress.
-- Begin Phase 13 public deployment only after the quality gates remain stable for one release cycle.
+- Review benchmark artifacts across one release cycle.
+- Add authentication, persistent storage, secret management, HTTPS deployment, monitoring, quotas, and rollback procedures.
 
 See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
 
@@ -250,6 +249,17 @@ Run the offline benchmark and release gate:
 ```
 
 The current gate requires a pass rate of at least `0.80` and zero detected hallucination risk. The command emits machine-readable JSON and returns a nonzero exit code when the gate fails.
+
+Compare provider/model configurations and persist the report:
+
+```powershell
+.\.venv\Scripts\python -m prompteasy.cli benchmark `
+	--compare offline:baseline `
+	--compare offline:candidate `
+	--output reports/benchmark-comparison.json
+```
+
+The CI workflow runs this offline comparison and uploads the JSON report as an artifact. Groq comparisons are opt-in and require `GROQ_API_KEY` and network access.
 
 ## Testing
 

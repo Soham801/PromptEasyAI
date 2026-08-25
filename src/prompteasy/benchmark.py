@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
 
 from .api import analyze_prompt
 from .evaluator import EvaluationDataset, _similarity, create_evaluation_dataset, evaluate_analysis, optimization_evaluation
+from .llm import GroqProvider, OfflineProvider
 from .models import PromptAnalysis
 
 
@@ -45,6 +48,48 @@ class BenchmarkReport:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self) | {"release_gate_passed": self.release_gate_passed}
+
+
+@dataclass(frozen=True)
+class BenchmarkComparison:
+    dataset_version: str
+    baseline: dict[str, Any]
+    candidates: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def compare_benchmarks(
+    provider_specs: list[tuple[str, str]],
+    dataset: EvaluationDataset | None = None,
+) -> BenchmarkComparison:
+    if not provider_specs:
+        raise ValueError("At least one provider/model pair is required.")
+
+    dataset = dataset or create_evaluation_dataset()
+    reports = [run_benchmark(_build_provider(provider, model), dataset) for provider, model in provider_specs]
+    baseline = reports[0].to_dict()
+    candidates = []
+    for report in reports[1:]:
+        candidate = report.to_dict()
+        candidate["delta"] = {
+            metric: report.metrics[metric] - reports[0].metrics[metric]
+            for metric in report.metrics
+        }
+        candidate["pass_rate_delta"] = report.pass_rate - reports[0].pass_rate
+        candidates.append(candidate)
+    return BenchmarkComparison(
+        dataset_version=dataset.version,
+        baseline=baseline,
+        candidates=candidates,
+    )
+
+
+def write_report(report: BenchmarkReport | BenchmarkComparison, output: str | Path) -> None:
+    path = Path(output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
 
 
 def run_benchmark(
@@ -126,3 +171,11 @@ def _group_pass_rates(cases: list[BenchmarkCase], dataset: EvaluationDataset, fi
 
 def _provider_name(provider: Any | None) -> str:
     return provider.__class__.__name__.replace("Provider", "").lower() if provider else "offline"
+
+
+def _build_provider(provider: str, model: str) -> Any:
+    if provider == "offline":
+        return OfflineProvider(model=model)
+    if provider == "groq":
+        return GroqProvider(model=model)
+    raise ValueError(f"Unsupported benchmark provider: {provider}")
