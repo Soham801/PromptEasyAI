@@ -12,6 +12,13 @@ def test_analyze_prompt_returns_serializable_result():
     assert isinstance(result.model_dump(), dict)
 
 
+def test_analyze_prompt_returns_improved_prompt_text():
+    result = analyze_prompt("Write a project summary")
+
+    assert result.optimized_prompt != result.original_prompt
+    assert "missing details" in result.optimized_prompt.lower()
+
+
 def test_evaluate_prompt_returns_result_for_valid_analysis():
     analysis = analyze_prompt("Explain machine learning")
     result = evaluate_prompt(analysis)

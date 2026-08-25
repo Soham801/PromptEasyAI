@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any, Protocol, runtime_checkable
@@ -72,18 +73,18 @@ def normalize_provider_error(exc: Exception) -> PromptProviderError:
         return AuthenticationError(str(exc))
 
     if isinstance(exc, GroqRateLimitError):
-        return RateLimitError(str(exc), retryable=True)
+        return RateLimitError(str(exc))
 
     if isinstance(exc, (APITimeoutError, GroqTimeout)):
-        return TimeoutError(str(exc), retryable=True)
+        return TimeoutError(str(exc))
 
     if isinstance(exc, APIConnectionError):
-        return ConnectionError(str(exc), retryable=True)
+        return ConnectionError(str(exc))
 
     if isinstance(exc, (InternalServerError, APIStatusError)):
         status_code = getattr(exc, "status_code", None)
         if status_code is not None and 500 <= status_code <= 599:
-            return ServerError(str(exc), retryable=True)
+            return ServerError(str(exc))
 
     if isinstance(exc, (BadRequestError, UnprocessableEntityError)):
         return SchemaError(str(exc))
@@ -92,11 +93,11 @@ def normalize_provider_error(exc: Exception) -> PromptProviderError:
     if status_code == 401:
         return AuthenticationError(str(exc))
     if status_code == 429:
-        return RateLimitError(str(exc), retryable=True)
+        return RateLimitError(str(exc))
     if status_code == 408:
-        return TimeoutError(str(exc), retryable=True)
+        return TimeoutError(str(exc))
     if status_code is not None and 500 <= status_code <= 599:
-        return ServerError(str(exc), retryable=True)
+        return ServerError(str(exc))
 
     return PromptProviderError(str(exc))
 
@@ -138,7 +139,9 @@ class GroqProvider:
 
 def build_offline_response(prompt: str) -> str:
     prompt_text = prompt.strip() or "prompt"
-    ending = "" if prompt_text.endswith((".", "!", "?")) else "."
+    ambiguities = _infer_ambiguities(prompt_text)
+    missing_information = _infer_missing_information(prompt_text)
+
     return json.dumps(
         {
             "schema_version": "1.0",
@@ -148,12 +151,63 @@ def build_offline_response(prompt: str) -> str:
             "context": [],
             "constraints": [],
             "output_requirements": [],
-            "ambiguities": [],
-            "missing_information": [],
-            "optimization_opportunities": ["Clarify the audience and desired output."],
-            "optimized_prompt": f"{prompt_text}{ending} Provide a clear, direct, and well-structured response.",
+            "ambiguities": ambiguities,
+            "missing_information": missing_information,
+            "optimization_opportunities": _infer_optimization_opportunities(prompt_text),
+            "optimized_prompt": build_offline_optimized_prompt(prompt_text),
         }
     )
+
+
+def build_offline_optimized_prompt(prompt: str) -> str:
+    prompt_text = prompt.strip() or "prompt"
+    return (
+        f"{prompt_text}. Be accurate. Ask for missing details. "
+        "State assumptions. Follow user constraints and format."
+    )
+
+
+def _infer_ambiguities(prompt_text: str) -> list[str]:
+    lower = prompt_text.lower()
+    ambiguities: list[str] = []
+
+    vague_markers = ("best", "better", "improve", "optimize", "good", "quick")
+    if any(marker in lower for marker in vague_markers):
+        ambiguities.append("The quality target is broad and lacks concrete success criteria.")
+
+    if len(re.findall(r"[a-z0-9']+", lower)) < 8:
+        ambiguities.append("The prompt is short and may omit context needed for a precise response.")
+
+    return ambiguities
+
+
+def _infer_missing_information(prompt_text: str) -> list[str]:
+    lower = prompt_text.lower()
+    missing: list[str] = []
+
+    if not any(token in lower for token in ("for", "audience", "user", "team", "beginner", "expert")):
+        missing.append("Target audience or reader level.")
+
+    if not any(token in lower for token in ("format", "json", "table", "bullets", "steps", "paragraph")):
+        missing.append("Preferred output format or structure.")
+
+    if not any(token in lower for token in ("length", "short", "concise", "detailed", "brief")):
+        missing.append("Desired response depth or length.")
+
+    return missing
+
+
+def _infer_optimization_opportunities(prompt_text: str) -> list[str]:
+    opportunities = [
+        "Specify the intended audience and response depth.",
+        "State the preferred output format explicitly.",
+        "Include domain constraints and success criteria to reduce ambiguity.",
+    ]
+
+    if len(prompt_text.split()) >= 18:
+        opportunities.append("Group requirements into explicit sections for objective, constraints, and output style.")
+
+    return opportunities
 
 
 class OfflineProvider:
@@ -180,7 +234,11 @@ class OfflineProvider:
                 user_message = item.get("content", "")
                 break
 
-        response_text = self._response(user_message) if callable(self._response) else self._response
+        if response_format is None and self._response is build_offline_response:
+            response_text = build_offline_optimized_prompt(user_message)
+        else:
+            response_text = self._response(user_message) if callable(self._response) else self._response
+
         return SimpleNamespace(
             choices=[
                 SimpleNamespace(

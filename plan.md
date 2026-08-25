@@ -423,52 +423,109 @@ Turn the working UI into a polished, accessible workspace that is ready for repe
 - The interface remains usable on mobile and desktop without overlap or hidden content.
 - Browser tests cover the primary success and failure paths.
 
-## 14. Phase 11: Public Deployment And Operations - Next
+## 14. Phase 11A: Prompt Quality Recovery Sprint - In Progress
+
+### Why This Phase Exists
+
+User validation showed a critical quality gap: optimized prompts can be too close to raw input, which reduces practical value. Before public deployment, optimization quality must become the primary engineering target.
 
 ### Goal
 
-Make PromptEasyAI safely accessible to real users with reproducible deployment and controlled provider usage.
+Guarantee that every analyzed prompt returns a materially improved optimized prompt while preserving intent, explicit constraints, and requested format.
 
-### Deliverables
+### Completed In This Sprint
 
-- Add production configuration, environment validation, and secret management.
-- Add persistent storage with migrations and backups instead of process-local stores.
-- Add authentication and per-user authorization before exposing saved history.
-- Add external rate limiting, quotas, provider cost controls, and structured log shipping.
-- Add CI checks for tests, packaging, dependency vulnerabilities, and container/deployment health.
-- Deploy the API and frontend behind TLS with monitoring, rollback, and incident procedures.
-- Run load, security, prompt-injection, and data-isolation tests before public release.
+- Added a two-step runtime flow in the public API: analyze first, then run an explicit optimizer pass.
+- Added configurable provider selection through environment configuration (`PROMPTEASY_PROVIDER`, `PROMPTEASY_MODEL`).
+- Upgraded the deterministic offline provider so optimized prompts are consistently clearer and not raw prompt echoes.
+- Added a regression test to ensure optimized prompt output differs from raw prompt in user-facing flows.
+- Kept all default automated validation offline-safe and deterministic.
+
+### Remaining Deliverables
+
+- Add explicit "quality delta" signals (for example: ambiguity reduction and requirement coverage).
+- Add retry-with-constraint-tightening behavior when optimization fails semantic validation.
+- Add guardrails for over-compression, where optimization becomes too short and loses requirements.
 
 ### Acceptance Criteria
 
-- A clean deployment can be reproduced from documented configuration.
-- User data and provider credentials are isolated and protected.
-- Operators can detect failures, control costs, and roll back releases.
-- The service is reachable through a stable HTTPS URL.
+- Optimized prompt is not identical to original prompt for valid non-empty inputs.
+- Optimized prompt passes structural, semantic, and requirement-preservation checks.
+- CLI, API, and web UI all use the same optimization pipeline.
 
-## 15. Recommended Delivery Order
+## 15. Phase 11B: Adaptive Optimization Engine - Next
 
-The smallest useful product should be delivered in this order:
+### Goal
 
-1. Complete Phase 0 so the repository is reproducible.
-2. Finish Phase 1 with a stable contract and isolated tests.
-3. Complete Phase 2 so provider failures do not define application behavior.
-4. Complete Phase 3 so improvements can be measured.
-5. Ship Phase 4 as a dependable Python API and CLI.
-6. Build Phase 5 only when external integrations require a service.
-7. Build Phase 6 as the first polished end-user experience.
-8. Add persistence and personalization after the core workflow has proven useful.
-9. Harden the optimization core and quality rules before broad production expansion.
-10. Add production and security controls only after the core product is stable.
+Move from static prompt rewriting to adaptive optimization that is robust across vague, technical, and constrained prompts for any downstream LLM.
 
-## 16. MVP Definition Of Done
+### Deliverables
 
-PromptEasyAI reaches its first MVP when:
+- Introduce strategy modes: clarify-first, constraint-first, format-first, and reasoning-first.
+- Select optimization strategy from analysis features (ambiguity level, constraints density, format specificity).
+- Add optional audience/tone/domain conditioning from preferences to the optimizer instruction.
+- Add a fallback "question-first" optimized prompt mode when missing information is high-impact.
 
-- A user can submit a prompt through the CLI, Python API, or web UI.
-- The system returns a strict, validated analysis and a clear optimized prompt.
-- The optimized prompt preserves intent and avoids unsupported assumptions.
-- Provider failures produce actionable errors and bounded retries.
-- Automated tests run without credentials or network access.
-- Evaluation measures both structural validity and basic semantic quality.
-- Documentation allows a new developer to install, configure, run, and test the project.
+### Acceptance Criteria
+
+- Optimization strategy is selected deterministically from analysis features.
+- Vague prompts produce useful clarifying structure instead of generic wording.
+- Constrained prompts preserve all explicit constraints under automated checks.
+
+## 16. Phase 12: Quality Benchmark And Release Gates - Next
+
+### Goal
+
+Establish measurable quality gates so prompt improvements are provable before release.
+
+### Deliverables
+
+- Build a benchmark set with vague, adversarial, domain-heavy, and format-critical prompts.
+- Define core metrics: prompt delta quality, requirement retention, ambiguity handling, and hallucination risk.
+- Add baseline-vs-candidate comparison reports per provider/model configuration.
+- Add CI failure gates for quality regressions, not only schema regressions.
+
+### Acceptance Criteria
+
+- Every release candidate includes a benchmark report artifact.
+- Quality regressions block merge unless explicitly approved.
+- Provider/model changes are tracked with before-after quality diffs.
+
+## 17. Phase 13: Public Deployment And Operations - Deferred Until Quality Gates
+
+### Goal
+
+Deploy only after optimization quality is stable and measurable.
+
+### Deliverables
+
+- Production configuration, secret management, and environment validation.
+- Persistent storage with migrations and backups.
+- Authentication, authorization, quotas, and cost controls.
+- Monitoring, log shipping, rollback playbooks, and incident response.
+- Security and prompt-injection hardening with pre-release validation.
+
+### Acceptance Criteria
+
+- Deployment is reproducible and secure.
+- User data and credentials are protected.
+- Operators can monitor quality, reliability, and cost in production.
+
+## 18. Updated Delivery Order
+
+From this point onward, delivery should prioritize quality outcomes over feature breadth:
+
+1. Close Phase 11A recovery items and lock the shared optimization pipeline.
+2. Deliver Phase 11B adaptive optimization strategies and strategy selection logic.
+3. Deliver Phase 12 benchmark-driven quality gates in CI.
+4. Start Phase 13 deployment only after quality gates are stable for at least one release cycle.
+
+## 19. Updated Definition Of Done
+
+PromptEasyAI is release-ready when:
+
+- Every user entry point returns a materially improved optimized prompt.
+- The optimized prompt preserves intent, constraints, and output requirements.
+- Benchmark quality metrics meet documented thresholds across target prompt categories.
+- Offline deterministic tests and provider-backed tests both pass their release gates.
+- Deployment controls, observability, and security checks are complete.

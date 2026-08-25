@@ -4,8 +4,7 @@ import argparse
 import json
 import sys
 
-from .api import analyze_prompt, evaluate_prompt
-from .llm import OfflineProvider
+from .api import analyze_prompt, evaluate_prompt, get_provider_config
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -20,8 +19,8 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--text", dest="text", required=True)
 
     config = subparsers.add_parser("config", help="Show default configuration")
-    config.add_argument("--provider", default="offline")
-    config.add_argument("--model", default="offline-model")
+    config.add_argument("--provider", default=None)
+    config.add_argument("--model", default=None)
 
     demo = subparsers.add_parser(
         "demo",
@@ -45,12 +44,12 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"error": "No prompt provided"}))
             return 2
 
-        analysis = analyze_prompt(prompt, provider=OfflineProvider())
+        analysis = analyze_prompt(prompt)
         print(json.dumps(analysis.model_dump(mode="json")))
         return 0
 
     if args.command == "evaluate":
-        analysis = analyze_prompt(args.text, provider=OfflineProvider())
+        analysis = analyze_prompt(args.text)
         result = evaluate_prompt(analysis)
         print(json.dumps({
             "valid": result.valid,
@@ -59,14 +58,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result.valid else 1
 
     if args.command == "config":
-        print(json.dumps({
-            "provider": args.provider,
-            "model": args.model,
-        }))
+        configured = get_provider_config()
+        if args.provider:
+            configured["provider"] = args.provider
+        if args.model:
+            configured["model"] = args.model
+        print(json.dumps(configured))
         return 0
 
     if args.command == "demo":
-        analysis = analyze_prompt(args.text, provider=OfflineProvider())
+        analysis = analyze_prompt(args.text)
         result = evaluate_prompt(analysis)
 
         print("PromptEasyAI Verification")

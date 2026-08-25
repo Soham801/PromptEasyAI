@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from .api import analyze_prompt, evaluate_prompt
+from .api import analyze_prompt, evaluate_prompt, get_provider_config
 from .llm import OfflineProvider
 from .models import PromptAnalysis
 
@@ -513,7 +513,7 @@ def metrics() -> dict[str, Any]:
 
 @app.get("/api/config")
 def config() -> dict[str, str]:
-    return {"provider": "offline", "model": "offline-model"}
+  return get_provider_config()
 
 
 @app.post("/api/analyze")

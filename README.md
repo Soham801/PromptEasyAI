@@ -103,6 +103,21 @@ From the repository root, start the local FastAPI server:
 .\.venv\Scripts\python -m uvicorn prompteasy.service:app --reload
 ```
 
+Provider selection for CLI and web flows is controlled with environment variables:
+
+```powershell
+$env:PROMPTEASY_PROVIDER="offline"  # default, deterministic local behavior
+```
+
+To use Groq-backed optimization quality instead of offline deterministic behavior:
+
+```powershell
+$env:PROMPTEASY_PROVIDER="groq"
+$env:PROMPTEASY_MODEL="openai/gpt-oss-20b"
+```
+
+When `PROMPTEASY_PROVIDER` is set to `groq`, ensure `GROQ_API_KEY` is present in `.env`.
+
 Open http://127.0.0.1:8000 in a browser. Enter a prompt, select **Analyze**, edit the optimized prompt if needed, then use **Copy optimized prompt** or **Export JSON**. The current web UI uses the deterministic offline provider, so it works without an API key.
 
 Useful service endpoints:
@@ -124,7 +139,7 @@ Enter a prompt when requested. The CLI prints the original prompt, its structure
 For a deterministic, human-readable verification output without network access:
 
 ```powershell
-\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"
+.\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"
 ```
 
 This displays the detected intent, task, ambiguities, missing information, optimized prompt, and final validation status.
