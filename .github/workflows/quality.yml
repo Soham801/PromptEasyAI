@@ -7,6 +7,11 @@ on:
 jobs:
   offline-quality:
     runs-on: ubuntu-latest
+    env:
+      PROMPTEASY_ENV: development
+      PROMPTEASY_PROVIDER: offline
+      PROMPTEASY_MODEL: offline-model
+      PROMPTEASY_RUN_LIVE_GROQ: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,7 +20,7 @@ jobs:
       - name: Install package
         run: python -m pip install .
       - name: Run tests
-        run: python -m pytest -q tests
+        run: python -m pytest -q tests --tb=short -ra
       - name: Run benchmark comparison gate
         run: python -m prompteasy.cli benchmark --compare offline:offline-baseline --compare offline:offline-candidate --output reports/benchmark-comparison.json
       - name: Upload benchmark report
