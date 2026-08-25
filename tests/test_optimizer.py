@@ -4,6 +4,7 @@ import pytest
 
 from prompteasy.models import PromptAnalysis
 from prompteasy.llm import build_offline_optimized_prompt
+from prompteasy.evaluator import quality_delta
 from prompteasy.optimizer import (
     OptimizationPreferences,
     ProviderPromptOptimizer,
@@ -28,6 +29,18 @@ class FakeOptimizerProvider:
             choices=[
                 SimpleNamespace(message=SimpleNamespace(content=self.content))
             ]
+        )
+
+
+class RetryOptimizerProvider(FakeOptimizerProvider):
+    def __init__(self, contents):
+        super().__init__(contents[0])
+        self.contents = iter(contents)
+
+    def generate(self, *, model, messages, response_format=None):
+        self.last_request = {"model": model, "messages": messages, "response_format": response_format}
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=next(self.contents)))]
         )
 
 
@@ -68,6 +81,20 @@ def test_provider_optimizer_rejects_fabricated_detail():
 
     with pytest.raises(ValueError, match="unsupported numeric"):
         ProviderPromptOptimizer(provider).optimize(build_analysis())
+
+
+def test_provider_optimizer_retries_with_tightened_constraints():
+    provider = RetryOptimizerProvider(
+        [
+            "Explain caching in exactly 12 sections.",
+            "Explain caching to a beginner using simple language and one analogy.",
+        ]
+    )
+
+    result = ProviderPromptOptimizer(provider).optimize(build_analysis())
+
+    assert result.startswith("Explain caching")
+    assert "previous candidate failed validation" in provider.last_request["messages"][0]["content"]
 
 
 def test_optimizer_conditions_instruction_with_preferences():
@@ -120,3 +147,15 @@ def test_offline_question_first_prompt_asks_before_assuming():
     assert result.startswith("Write an application for me.")
     assert "ask for the missing details" in result
     assert "Do not assume answers" in result
+
+
+def test_quality_delta_reports_improvement_and_requirement_coverage():
+    analysis = build_analysis(
+        constraints=["Do not use jargon"],
+        optimized_prompt="Explain caching to a beginner using simple language. Do not use jargon.",
+    )
+    delta = quality_delta(analysis)
+
+    assert delta.materially_improved is True
+    assert delta.requirement_coverage == 1.0
+    assert delta.optimized_tokens >= delta.original_tokens

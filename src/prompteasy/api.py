@@ -25,9 +25,13 @@ def analyze_prompt(
             preferences=preferences,
         ).optimize(analysis)
         return analysis.model_copy(update={"optimized_prompt": optimized_prompt})
-    except Exception:
-        # Fallback to validated analyzer output if optimization fails.
-        return analysis
+    except Exception as exc:
+        fallback_result = optimization_evaluation(analysis)
+        if fallback_result.valid:
+            return analysis
+        raise ValueError(
+            "Prompt optimization failed validation: " + "; ".join(fallback_result.errors)
+        ) from exc
 
 
 def evaluate_prompt(analysis: PromptAnalysis):

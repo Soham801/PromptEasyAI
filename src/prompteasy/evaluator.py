@@ -12,6 +12,15 @@ class EvaluationResult:
 
 
 @dataclass(frozen=True)
+class QualityDelta:
+    original_tokens: int
+    optimized_tokens: int
+    requirement_coverage: float
+    ambiguity_handling: float
+    materially_improved: bool
+
+
+@dataclass(frozen=True)
 class EvaluationExample:
     prompt: str
     expected_intent: str
@@ -134,6 +143,11 @@ def optimization_evaluation(
     errors: list[str] = []
     optimized = optimized_prompt or analysis.optimized_prompt
 
+    source_tokens = _tokenize(analysis.original_prompt)
+    optimized_tokens = _tokenize(optimized)
+    if len(source_tokens) >= 8 and len(optimized_tokens) < len(source_tokens) * 0.5:
+        errors.append("optimized_prompt is over-compressed and may lose source requirements")
+
     if _similarity(analysis.original_prompt, optimized) < 0.15:
         errors.append("optimized_prompt is not materially related to the original prompt")
 
@@ -168,6 +182,32 @@ def optimization_evaluation(
             errors.append(f"optimized_prompt does not preserve requirement: {requirement}")
 
     return EvaluationResult(valid=len(errors) == 0, errors=errors)
+
+
+def quality_delta(
+    analysis: PromptAnalysis,
+    optimized_prompt: str | None = None,
+) -> QualityDelta:
+    optimized = optimized_prompt or analysis.optimized_prompt
+    requirements = [*analysis.constraints, *analysis.output_requirements]
+    explicit_requirements = [item for item in requirements if _is_explicit_requirement(item)]
+    retained = sum(
+        _requirement_is_preserved(item, optimized) for item in explicit_requirements
+    )
+    missing = len(analysis.missing_information)
+    ambiguity_handling = 1.0 if not missing else float(
+        any(marker in optimized.lower() for marker in ("ask", "missing", "clarif", "question"))
+    )
+    original_tokens = len(_tokenize(analysis.original_prompt))
+    optimized_tokens = len(_tokenize(optimized))
+    return QualityDelta(
+        original_tokens=original_tokens,
+        optimized_tokens=optimized_tokens,
+        requirement_coverage=retained / len(explicit_requirements) if explicit_requirements else 1.0,
+        ambiguity_handling=ambiguity_handling,
+        materially_improved=optimized.strip() != analysis.original_prompt.strip()
+        and optimized_tokens >= original_tokens,
+    )
 
 
 def _is_explicit_requirement(requirement: str) -> bool:

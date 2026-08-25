@@ -38,25 +38,34 @@ class ProviderPromptOptimizer:
         if not isinstance(analysis, PromptAnalysis):
             raise TypeError("analysis must be a PromptAnalysis instance.")
 
-        response = self.provider.generate(
-            model=self.provider.model,
-            messages=[
-                {"role": "system", "content": _build_optimizer_instruction(analysis, self.preferences)},
-                {"role": "user", "content": _build_optimizer_input(analysis)},
-            ],
-        )
-        content = response.choices[0].message.content
-        if not isinstance(content, str) or not content.strip():
-            raise RuntimeError("The optimizer returned an empty prompt.")
-
-        optimized_prompt = content.strip()
-        result = optimization_evaluation(analysis, optimized_prompt)
-        if not result.valid:
-            raise ValueError(
-                "Optimized prompt failed validation: " + "; ".join(result.errors)
+        base_instruction = _build_optimizer_instruction(analysis, self.preferences)
+        last_errors: list[str] = []
+        for attempt in range(2):
+            instruction = base_instruction
+            if attempt:
+                instruction += (
+                    "\n\nThe previous candidate failed validation. Rewrite it while preserving every "
+                    "explicit requirement and avoiding compression that removes source details."
+                )
+            response = self.provider.generate(
+                model=self.provider.model,
+                messages=[
+                    {"role": "system", "content": instruction},
+                    {"role": "user", "content": _build_optimizer_input(analysis)},
+                ],
             )
+            content = response.choices[0].message.content
+            if not isinstance(content, str) or not content.strip():
+                last_errors = ["The optimizer returned an empty prompt."]
+                continue
 
-        return optimized_prompt
+            optimized_prompt = content.strip()
+            result = optimization_evaluation(analysis, optimized_prompt)
+            if result.valid:
+                return optimized_prompt
+            last_errors = result.errors
+
+        raise ValueError("Optimized prompt failed validation: " + "; ".join(last_errors))
 
 
 def select_optimization_strategy(analysis: PromptAnalysis) -> str:

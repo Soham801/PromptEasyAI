@@ -423,7 +423,7 @@ Turn the working UI into a polished, accessible workspace that is ready for repe
 - The interface remains usable on mobile and desktop without overlap or hidden content.
 - Browser tests cover the primary success and failure paths.
 
-## 14. Phase 11A: Prompt Quality Recovery Sprint - In Progress
+## 14. Phase 11A: Prompt Quality Recovery Sprint - Completed
 
 ### Why This Phase Exists
 
@@ -440,18 +440,21 @@ Guarantee that every analyzed prompt returns a materially improved optimized pro
 - Upgraded the deterministic offline provider so optimized prompts are consistently clearer and not raw prompt echoes.
 - Added a regression test to ensure optimized prompt output differs from raw prompt in user-facing flows.
 - Kept all default automated validation offline-safe and deterministic.
-
-### Remaining Deliverables
-
-- Add explicit "quality delta" signals (for example: ambiguity reduction and requirement coverage).
-- Add retry-with-constraint-tightening behavior when optimization fails semantic validation.
-- Add guardrails for over-compression, where optimization becomes too short and loses requirements.
+- Added `QualityDelta` signals for token growth, requirement coverage, ambiguity handling, and material improvement.
+- Added one bounded retry with tightened preservation and anti-compression instructions after validation failure.
+- Added an over-compression guard that rejects candidates losing substantial source content.
 
 ### Acceptance Criteria
 
 - Optimized prompt is not identical to original prompt for valid non-empty inputs.
 - Optimized prompt passes structural, semantic, and requirement-preservation checks.
 - CLI, API, and web UI all use the same optimization pipeline.
+
+### Phase 11A Validation
+
+`\.venv\Scripts\python -m pytest -q tests/test_optimizer.py tests/test_evaluator.py tests/test_cli.py`
+
+Current result: `22 passed`.
 
 ## 15. Phase 11B: Adaptive Optimization Engine - Completed
 
@@ -472,7 +475,7 @@ Move from static prompt rewriting to adaptive optimization that is robust across
 - Vague prompts produce useful clarifying structure instead of generic wording.
 - Constrained prompts preserve all explicit constraints under automated checks.
 
-## 16. Phase 12: Quality Benchmark And Release Gates - Completed
+## 16. Phase 12: Quality Benchmark And Release Gates - In Progress
 
 ### Goal
 
@@ -492,13 +495,30 @@ Establish measurable quality gates so prompt improvements are provable before re
 - Quality regressions block merge unless explicitly approved.
 - Provider/model changes are tracked with before-after quality diffs.
 
+### Completed In This Phase
+
+- Added a versioned benchmark dataset with 10 cases across simple,
+  technical, ambiguous, coding, role-based, long, vague, adversarial,
+  domain-heavy, and format-critical categories.
+- Added machine-readable metrics for validity, requirement retention,
+  ambiguity handling, hallucination risk, and intent/task alignment.
+- Added the offline `benchmark` CLI command with release thresholds.
+- Verified the offline baseline at `10/10` cases passed, pass rate `1.00`,
+  and hallucination risk `0.00`.
+
+### Remaining Deliverables
+
+- Add baseline-versus-candidate comparison reports for each provider/model.
+- Persist benchmark report artifacts for release candidates.
+- Enforce benchmark thresholds in CI.
+
 ### Phase 12 Validation
 
 `\.venv\Scripts\python -m prompteasy.cli benchmark`
 
 Current offline baseline: `10/10` cases passed, pass rate `1.00`, and
-hallucination risk `0.00`. Phase 13 remains deferred until this gate is
-stable across provider/model comparisons.
+hallucination risk `0.00`. Phase 13 remains deferred until provider/model
+comparison gates are implemented and stable.
 
 ## 17. Phase 13: Public Deployment And Operations - Deferred Until Quality Gates
 
@@ -524,10 +544,9 @@ Deploy only after optimization quality is stable and measurable.
 
 From this point onward, delivery should prioritize quality outcomes over feature breadth:
 
-1. Close Phase 11A recovery items and lock the shared optimization pipeline.
-2. Deliver Phase 11B adaptive optimization strategies and strategy selection logic.
-3. Maintain Phase 12 benchmark-driven quality gates across provider/model changes.
-4. Start Phase 13 deployment only after quality gates are stable for at least one release cycle.
+1. Complete Phase 12 provider/model comparison reports and CI enforcement.
+2. Keep the shared optimization pipeline and adaptive strategies regression-tested.
+3. Start Phase 13 deployment only after quality gates are stable for at least one release cycle.
 
 ## 19. Updated Definition Of Done
 
