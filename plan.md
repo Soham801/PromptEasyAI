@@ -472,7 +472,7 @@ Move from static prompt rewriting to adaptive optimization that is robust across
 - Vague prompts produce useful clarifying structure instead of generic wording.
 - Constrained prompts preserve all explicit constraints under automated checks.
 
-## 16. Phase 12: Quality Benchmark And Release Gates - Next
+## 16. Phase 12: Quality Benchmark And Release Gates - Completed
 
 ### Goal
 
@@ -484,12 +484,21 @@ Establish measurable quality gates so prompt improvements are provable before re
 - Define core metrics: prompt delta quality, requirement retention, ambiguity handling, and hallucination risk.
 - Add baseline-vs-candidate comparison reports per provider/model configuration.
 - Add CI failure gates for quality regressions, not only schema regressions.
+- Add a machine-readable `benchmark` CLI command with a documented 0.80 pass-rate threshold and zero hallucination-risk threshold.
 
 ### Acceptance Criteria
 
 - Every release candidate includes a benchmark report artifact.
 - Quality regressions block merge unless explicitly approved.
 - Provider/model changes are tracked with before-after quality diffs.
+
+### Phase 12 Validation
+
+`\.venv\Scripts\python -m prompteasy.cli benchmark`
+
+Current offline baseline: `10/10` cases passed, pass rate `1.00`, and
+hallucination risk `0.00`. Phase 13 remains deferred until this gate is
+stable across provider/model comparisons.
 
 ## 17. Phase 13: Public Deployment And Operations - Deferred Until Quality Gates
 
@@ -517,7 +526,7 @@ From this point onward, delivery should prioritize quality outcomes over feature
 
 1. Close Phase 11A recovery items and lock the shared optimization pipeline.
 2. Deliver Phase 11B adaptive optimization strategies and strategy selection logic.
-3. Deliver Phase 12 benchmark-driven quality gates in CI.
+3. Maintain Phase 12 benchmark-driven quality gates across provider/model changes.
 4. Start Phase 13 deployment only after quality gates are stable for at least one release cycle.
 
 ## 19. Updated Definition Of Done

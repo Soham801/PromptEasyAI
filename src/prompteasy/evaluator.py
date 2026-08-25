@@ -259,6 +259,34 @@ def create_evaluation_dataset() -> EvaluationDataset:
             category="long",
             difficulty="hard",
         ),
+        EvaluationExample(
+            prompt="Make my project better.",
+            expected_intent="Improve a project",
+            expected_task="Improve a project",
+            category="vague",
+            difficulty="hard",
+        ),
+        EvaluationExample(
+            prompt="Build an AI app for me.",
+            expected_intent="Build an AI application",
+            expected_task="Design or build an AI application",
+            category="adversarial",
+            difficulty="hard",
+        ),
+        EvaluationExample(
+            prompt="Explain vector databases for a production search platform.",
+            expected_intent="Understand vector databases",
+            expected_task="Explain vector database concepts",
+            category="domain-heavy",
+            difficulty="medium",
+        ),
+        EvaluationExample(
+            prompt="Compare PostgreSQL and MongoDB. Return the answer as a table.",
+            expected_intent="Compare databases",
+            expected_task="Compare PostgreSQL and MongoDB",
+            category="format-critical",
+            difficulty="medium",
+        ),
     ]
 
     return EvaluationDataset(version="1.0", examples=examples)

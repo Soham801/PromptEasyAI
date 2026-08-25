@@ -5,6 +5,7 @@ import json
 import sys
 
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
+from .benchmark import run_benchmark
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -27,6 +28,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Show a human-readable prompt optimization result",
     )
     demo.add_argument("--text", dest="text", required=True)
+
+    subparsers.add_parser("benchmark", help="Run the offline quality benchmark")
 
     return parser
 
@@ -89,6 +92,11 @@ def main(argv: list[str] | None = None) -> int:
         if result.errors:
             print("Validation errors: " + "; ".join(result.errors))
         return 0 if result.valid else 1
+
+    if args.command == "benchmark":
+        report = run_benchmark()
+        print(json.dumps(report.to_dict()))
+        return 0 if report.release_gate_passed else 1
 
     parser.error("Unsupported command")
     return 2

@@ -36,7 +36,19 @@ The analyzer must:
 - Preserve the existing FastAPI contract while making the interface ready for repeated user workflows.
 - The optimized prompt is editable, visibly validated, and used by copy/export actions.
 
-### Next: Phase 11 Public Deployment
+### Phase 11B: Adaptive Optimization - Complete
+
+- Deterministic question-first, constraint-first, format-first, reasoning-first, and direct strategies.
+- Optional audience, tone, and domain conditioning.
+- Offline-safe clarification fallback for high-impact missing information.
+
+### Phase 12: Quality Benchmark And Release Gates - Complete
+
+- Versioned benchmark coverage for vague, adversarial, domain-heavy, and format-critical prompts.
+- Machine-readable quality metrics and a release-gate CLI command.
+- Current offline baseline: 10/10 cases passed with zero hallucination risk.
+
+### Next: Phase 13 Public Deployment
 
 - Add authentication, persistent storage, secret management, HTTPS deployment, monitoring, quotas, and rollback procedures.
 
