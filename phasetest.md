@@ -1,6 +1,6 @@
 # Phase Test Guide
 
-This file documents the exact commands used to validate each completed phase in this project.
+This file documents the exact commands used to validate completed phases and the active Phase 12 quality gate.
 
 > Note: the live Groq structured-output probe is now an opt-in integration test. It is skipped by default and only runs when `PROMPTEASY_RUN_LIVE_GROQ=1` is set, keeping the normal suite deterministic and offline-safe.
 
@@ -206,3 +206,59 @@ Browser verification completed against the local Uvicorn server:
 - Desktop viewport: `1440x900`, no horizontal overflow.
 - Mobile viewport: `390x844`, no horizontal overflow.
 - Interactive flow: entered a prompt, selected Analyze, and confirmed the rendered original prompt, semantic list output, editable optimized prompt, and validation badge.
+
+## Phase 11A: Prompt Quality Recovery Sprint - Completed
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_optimizer.py tests/test_evaluator.py tests/test_cli.py
+```
+
+Expected result:
+
+```text
+22 passed
+```
+
+This verifies quality-delta signals, requirement coverage, ambiguity handling, over-compression protection, bounded retry with tightened constraints, and the shared public optimization flow.
+
+## Phase 11B: Adaptive Optimization Engine - Completed
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_optimizer.py tests/test_backend.py
+```
+
+This verifies deterministic direct, question-first, constraint-first, format-first, and reasoning-first strategies, plus audience, tone, and domain conditioning.
+
+## Phase 12: Quality Benchmark And Release Gates - In Progress
+
+Run the current offline benchmark gate:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m prompteasy.cli benchmark
+```
+
+Current verified result:
+
+```text
+10/10 cases passed
+pass rate: 1.00
+hallucination risk: 0.00
+```
+
+The gate requires a pass rate of at least `0.80` and zero hallucination risk. Remaining Phase 12 validation must compare configured provider/model pairs, persist JSON report artifacts, and run the same gate in CI.
+
+## Full Offline Regression Suite
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q
+```
+
+Current result: `42 passed, 1 skipped`. The skipped test is the opt-in live Groq probe.

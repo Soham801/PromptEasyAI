@@ -520,6 +520,22 @@ Current offline baseline: `10/10` cases passed, pass rate `1.00`, and
 hallucination risk `0.00`. Phase 13 remains deferred until provider/model
 comparison gates are implemented and stable.
 
+### Current Status And Next Steps
+
+The implementation baseline is green: the full offline suite passes with
+`42 passed, 1 skipped`, and the benchmark gate passes all 10 offline cases.
+Phase 12 is not release-complete yet because the benchmark has not been
+run and persisted as a comparison across configured provider/model pairs,
+and CI does not yet enforce the thresholds.
+
+Next execution order:
+
+1. Add a provider/model benchmark comparison command using the same dataset.
+2. Persist JSON reports with dataset version, provider, model, metrics, and gate result.
+3. Add CI execution and failure thresholds for pass rate and hallucination risk.
+4. Re-run the full suite and document a stable comparison cycle.
+5. Start Phase 13 deployment and operations after the quality gates remain stable for one release cycle.
+
 ## 17. Phase 13: Public Deployment And Operations - Deferred Until Quality Gates
 
 ### Goal

@@ -42,15 +42,19 @@ The analyzer must:
 - Optional audience, tone, and domain conditioning.
 - Offline-safe clarification fallback for high-impact missing information.
 
-### Phase 12: Quality Benchmark And Release Gates - Complete
+### Phase 12: Quality Benchmark And Release Gates - In Progress
 
 - Versioned benchmark coverage for vague, adversarial, domain-heavy, and format-critical prompts.
 - Machine-readable quality metrics and a release-gate CLI command.
 - Current offline baseline: 10/10 cases passed with zero hallucination risk.
+- Remaining: provider/model comparison reports, persisted release artifacts, and CI enforcement.
 
-### Next: Phase 13 Public Deployment
+### Next: Complete Phase 12 Release Gates
 
-- Add authentication, persistent storage, secret management, HTTPS deployment, monitoring, quotas, and rollback procedures.
+- Compare offline and configured provider/model results using the same benchmark dataset.
+- Persist benchmark JSON reports for release candidates.
+- Fail CI when the pass-rate or hallucination-risk thresholds regress.
+- Begin Phase 13 public deployment only after the quality gates remain stable for one release cycle.
 
 See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
 
@@ -238,6 +242,14 @@ else:
 ```
 
 This evaluator checks required fields, semantic relation, explicit requirement preservation, and unsupported details in optimized prompts.
+
+Run the offline benchmark and release gate:
+
+```powershell
+.\.venv\Scripts\python -m prompteasy.cli benchmark
+```
+
+The current gate requires a pass rate of at least `0.80` and zero detected hallucination risk. The command emits machine-readable JSON and returns a nonzero exit code when the gate fails.
 
 ## Testing
 
