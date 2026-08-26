@@ -43,12 +43,18 @@ class PromptAnalyzer:
 
         Args:
             provider: Optional provider instance. If omitted,
-                a default GroqProvider is created.
+                the provider configured by the environment is created.
         """
         if provider is None:
-            from .llm import GroqProvider
+            from .config import get_settings
+            from .llm import GroqProvider, OfflineProvider
 
-            provider = GroqProvider()
+            settings = get_settings()
+            provider = (
+                GroqProvider(model=settings.model)
+                if settings.provider == "groq"
+                else OfflineProvider(model=settings.model)
+            )
 
         self.provider = provider
 
