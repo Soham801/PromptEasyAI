@@ -519,6 +519,140 @@ Current offline baseline: `10/10` cases passed, pass rate `1.00`, and
 hallucination risk `0.00`. The comparison workflow supports explicit
 provider/model pairs and persists JSON artifacts.
 
+## 17. Phase 13: Template-Guided Intent-Preserving Prompt Compiler - Planned
+
+### Why This Phase Exists
+
+User testing found that the optimized result is often generic. The current
+optimizer applies one broad rewrite instruction and selects only a coarse
+strategy. That can improve wording while failing to capture the user's
+actual job, audience, domain, success criteria, or required deliverable.
+
+The goal is not to make every prompt longer. The goal is to produce a
+ready-to-use downstream instruction that is specific to the user's request,
+faithful to its intent, transparent about missing information, and useful
+across model providers. Absolute accuracy cannot be guaranteed by an LLM, so
+the implementation must make accuracy measurable and reject or expose
+uncertain rewrites rather than silently guessing.
+
+### Research Notes: PromptCowboy
+
+The public PromptCowboy site presents a template-led workflow rather than a
+single generic rewrite:
+
+- Users can start from role- and job-oriented prompt templates such as
+  meeting-note distillation, data analysis, document summarization, PRDs,
+  outreach, proposals, and email writing.
+- The prompt workspace exposes a prompt type, model choice, and template
+  selection before generation; the landing flow labels these as `Prompt type`,
+  `Model`, and `PromptTemplate`.
+- The product positions the result as a reusable prompt and provides a
+  discoverable library, with sign-in required for saving prompts.
+- Its FAQ advertises compatibility with multiple AI tools and workflow
+  integrations, while the public FAQ content does not expose the exact
+  generation algorithm. These product claims are treated as direction, not
+  assumptions about implementation.
+- Its security page states that customer prompts are not used to train models
+  and that stored data can be deleted. PromptEasyAI should preserve its own
+  privacy and retention requirements rather than copying claims without the
+  corresponding controls.
+
+### Proposed User Flow
+
+```text
+Raw prompt
+        |
+        v
+Intent and risk extraction
+        |
+        v
+Task family + role/audience + output mode selection
+        |
+        v
+High-impact clarification questions or explicit placeholders
+        |
+        v
+Template-guided composition with source requirements mapped into sections
+        |
+        v
+Independent preservation, anti-fabrication, and quality evaluation
+        |
+        v
+Ready-to-use prompt + assumptions/questions + quality signals
+```
+
+### Deliverables
+
+1. Extend the internal analysis contract with explicit task family, target
+        audience, desired outcome, success criteria, source material, risk level,
+        and confidence or evidence links. Keep the public contract backward
+        compatible or version it deliberately.
+2. Add a small versioned template catalog for common task families, including
+        writing, summarization, analysis, coding, planning, comparison, and
+        content generation. Templates must define slots and required output
+        sections, not invent domain facts.
+3. Replace the single-pass rewrite with a bounded compiler pipeline:
+        classify -> select template -> fill only evidence-backed slots -> ask the
+        highest-impact questions or add labeled placeholders -> compose -> critique
+        -> repair. Keep provider calls bounded and provider-agnostic.
+4. Preserve a traceable mapping from every original explicit requirement to
+        its rendered location in the optimized prompt. Never turn a missing value
+        into a plausible-sounding fact.
+5. Add output modes for direct execution, clarification-first, and
+        template-assisted prompts. The mode must be selected from intent and risk,
+        not from generic wording alone.
+6. Strengthen evaluation with requirement recall, intent/task agreement,
+        unsupported-claim detection, ambiguity coverage, template-slot coverage,
+        specificity delta, and a penalty for boilerplate that adds no evidence.
+7. Add benchmark cases for representative PromptCowboy-style task families,
+        underspecified requests, conflicting constraints, prompt injection in
+        source material, and prompts where asking a question is better than
+        guessing.
+8. Update CLI/API/UI responses to show the optimized prompt separately from
+        unresolved questions, assumptions, selected mode, and quality signals.
+
+### Implementation Order
+
+1. Define the versioned template and evidence models with deterministic unit
+        tests.
+2. Implement task-family classification and slot extraction behind the
+        existing optimizer interface.
+3. Implement template rendering and clarification-first behavior.
+4. Add the independent critique/repair loop and stricter evaluation metrics.
+5. Update the offline provider so tests exercise the same compiler stages.
+6. Update API, CLI, and UI surfaces only after the core contract is stable.
+7. Run the expanded benchmark against offline and opt-in live providers.
+
+### Acceptance Criteria
+
+- For every benchmark case, the optimized prompt contains all explicit user
+  requirements or reports the exact unresolved conflict.
+- Unsupported facts, numbers, names, tools, and constraints are never added;
+  missing high-impact information becomes a question or clearly labeled
+  placeholder.
+- The selected task family and output mode match the labeled intent at the
+  agreed benchmark threshold, with confidence exposed when classification is
+  uncertain.
+- The result is materially more specific than the source without relying on
+  generic boilerplate, measured by a documented specificity and boilerplate
+  score.
+- Prompt compilation remains bounded, deterministic in offline mode, and
+  independent of Groq-specific types.
+- The existing regression suite remains green, and the new benchmark includes
+  a release gate for intent preservation, requirement retention, and zero
+  hallucination-risk violations.
+
+### Planned Validation
+
+From the repository root in PowerShell:
+
+1. `cd C:\PromptEasyAI`
+2. Add focused tests for template selection, slot filling, clarification
+        behavior, preservation mapping, and anti-fabrication repair.
+3. Run `\.venv\Scripts\python -m pytest -q`.
+4. Run `\.venv\Scripts\python -m prompteasy.cli benchmark` and compare the
+        Phase 12 baseline with the Phase 13 report.
+
 ### Current Status And Next Steps
 
 The implementation baseline is green: the full offline suite passes with
