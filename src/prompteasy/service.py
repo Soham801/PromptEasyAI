@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from collections import defaultdict, deque
+import hashlib
+import hmac
 from typing import Any
 from uuid import uuid4
 
@@ -14,6 +16,7 @@ from .api import analyze_prompt, evaluate_prompt, get_provider_config
 from .config import get_settings
 from .models import PromptAnalysis
 from .optimizer import OptimizationPreferences
+from .storage import Storage
 
 
 app = FastAPI(title="PromptEasyAI")
@@ -57,12 +60,24 @@ async def request_observability(request: Request, call_next):
   response.headers["X-Request-ID"] = request_id
   return response
 
-_history_store: list[dict[str, Any]] = []
-_preferences_store: dict[str, Any] = {
-    "tone": "neutral",
-    "audience": "general",
-    "domain": "general",
-}
+_storage = Storage(get_settings().storage_path)
+
+
+def _user_id(request: Request) -> str:
+  configured_token = get_settings().auth_token
+  if not configured_token:
+    return "anonymous"
+
+  authorization = request.headers.get("Authorization", "")
+  if not authorization.startswith("Bearer "):
+    raise HTTPException(status_code=401, detail="Bearer authentication is required.")
+  credential = authorization.removeprefix("Bearer ")
+  if "." not in credential:
+    raise HTTPException(status_code=401, detail="Invalid bearer credential.")
+  user_name, supplied_token = credential.split(".", 1)
+  if not user_name or not hmac.compare_digest(supplied_token, configured_token):
+    raise HTTPException(status_code=401, detail="Invalid bearer credential.")
+  return hashlib.sha256(user_name.encode("utf-8")).hexdigest()
 
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -509,7 +524,7 @@ def metrics() -> dict[str, Any]:
   return {
     "requests": dict(_metrics),
     "methods": dict(_request_counts),
-    "history_entries": len(_history_store),
+    "history_entries": _storage.count_history(),
   }
 
 
@@ -519,11 +534,12 @@ def config() -> dict[str, str]:
 
 
 @app.post("/api/analyze")
-def analyze_endpoint(payload: AnalyzeRequest) -> dict[str, Any]:
+def analyze_endpoint(payload: AnalyzeRequest, request: Request) -> dict[str, Any]:
     try:
+        preferences = _storage.get_preferences(_user_id(request))
         analysis = analyze_prompt(
           payload.prompt,
-          preferences=OptimizationPreferences(**_preferences_store),
+          preferences=OptimizationPreferences(**preferences),
         )
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -541,30 +557,29 @@ def evaluate_endpoint(payload: EvaluateRequest) -> dict[str, Any]:
 
 
 @app.get("/api/history")
-def list_history() -> dict[str, Any]:
-    return {"items": _history_store}
+def list_history(request: Request) -> dict[str, Any]:
+    items = _storage.list_history(_user_id(request))
+    return {"items": items}
 
 
 @app.post("/api/history")
-def save_history(payload: HistoryEntryRequest) -> dict[str, Any]:
-    analysis = PromptAnalysis.model_validate(payload.analysis)
-    entry = {
-        "id": len(_history_store) + 1,
-        "label": payload.label or "untitled",
-        "saved_at": datetime.now(timezone.utc).isoformat(),
-        "analysis": analysis.model_dump(mode="json"),
-    }
-    _history_store.insert(0, entry)
-    return {"count": len(_history_store), "items": _history_store}
+def save_history(payload: HistoryEntryRequest, request: Request) -> dict[str, Any]:
+  analysis = PromptAnalysis.model_validate(payload.analysis)
+  user_id = _user_id(request)
+  entry = {
+    "label": payload.label or "untitled",
+    "saved_at": datetime.now(timezone.utc).isoformat(),
+    "analysis": analysis.model_dump(mode="json"),
+  }
+  items = _storage.save_history(user_id, entry["label"], entry["saved_at"], entry["analysis"])
+  return {"count": len(items), "items": items}
 
 
 @app.get("/api/preferences")
-def get_preferences() -> dict[str, Any]:
-    return {"preferences": _preferences_store}
+def get_preferences(request: Request) -> dict[str, Any]:
+    return {"preferences": _storage.get_preferences(_user_id(request))}
 
 
 @app.post("/api/preferences")
-def update_preferences(payload: PreferencesUpdate) -> dict[str, Any]:
-    for field, value in payload.model_dump(exclude_none=True).items():
-        _preferences_store[field] = value
-    return _preferences_store
+def update_preferences(payload: PreferencesUpdate, request: Request) -> dict[str, Any]:
+    return _storage.update_preferences(_user_id(request), payload.model_dump(exclude_none=True))

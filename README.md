@@ -54,7 +54,8 @@ The analyzer must:
 
 - Runtime environment and provider settings are validated at startup.
 - Production rejects the offline provider and includes a container definition.
-- Remaining: authenticated persistence, managed secrets, HTTPS, monitoring, quotas, rollback, and security validation.
+- SQLite-backed history and preferences with optional bearer authentication and per-user isolation.
+- Remaining: migrations/backups, managed secrets, HTTPS, monitoring, quotas, rollback, and security validation.
 
 See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
 
@@ -135,6 +136,8 @@ $env:PROMPTEASY_MODEL="openai/gpt-oss-20b"
 When `PROMPTEASY_PROVIDER` is set to `groq`, ensure `GROQ_API_KEY` is present in `.env`.
 
 For a production container, set `PROMPTEASY_ENV=production`, provide `GROQ_API_KEY` through the deployment secret manager, and configure `PROMPTEASY_PROVIDER=groq` plus `PROMPTEASY_MODEL`. The service rejects production startup with the offline provider.
+
+For persistent history and preferences, set `PROMPTEASY_STORAGE_PATH` to a protected SQLite file. Set `PROMPTEASY_AUTH_TOKEN` to require bearer credentials for persistence endpoints; clients use `Authorization: Bearer <user-id>.<token>`. Do not use this shared-token mechanism as a substitute for a full identity provider in public deployment.
 
 Open http://127.0.0.1:8000 in a browser. Enter a prompt, select **Analyze**, edit the optimized prompt if needed, then use **Copy optimized prompt** or **Export JSON**. The current web UI uses the deterministic offline provider, so it works without an API key.
 

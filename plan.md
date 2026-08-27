@@ -71,6 +71,11 @@ Make the project predictable to install, test, extend, and run in local and CI e
 - The package can be built and imported from the generated distribution.
 - No credentials or generated build directories are tracked.
 
+### Verified Foundation Updates
+
+- `pyproject.toml` has a concrete package description.
+- Root `.env.example` documents provider, storage, authentication, rate-limit, and Groq settings without secrets.
+
 ## 4. Phase 1: Core Prompt Analysis Contract - Completed
 
 ### Goal
@@ -656,7 +661,7 @@ From the repository root in PowerShell:
 ### Current Status And Next Steps
 
 The implementation baseline is green: the full offline suite passes with
-`46 passed, 2 skipped`, and the benchmark gate passes all 10 offline cases.
+`47 passed, 2 skipped`, and the benchmark gate passes all 10 offline cases.
 Phase 12 is release-complete for the offline quality gate. The GitHub
 Actions workflow runs tests, executes a baseline/candidate comparison, and
 uploads the JSON artifact while enforcing the thresholds.
@@ -688,11 +693,14 @@ Deploy only after optimization quality is stable and measurable.
 - Added production protection that rejects the offline provider.
 - Added a production `Dockerfile` and `.dockerignore`.
 - Added focused configuration and health endpoint tests.
+- Added SQLite-backed history and preferences storage with schema initialization.
+- Added optional bearer authentication and per-user record isolation for persistence endpoints.
+- Added regression coverage for unauthorized access and cross-user history isolation.
 - Updated the security checklist with production configuration requirements.
 
 ### Remaining Deliverables
 
-- Move history and preferences to authenticated persistent storage with migrations and backups.
+- Add migrations, backups, restore testing, and managed database operations.
 - Add authentication, authorization, quotas, and external rate limiting.
 - Add managed secrets, HTTPS, monitoring, alerting, rollback procedures, and vulnerability scanning.
 - Complete load testing and prompt-injection/data-isolation validation.
@@ -702,6 +710,12 @@ Deploy only after optimization quality is stable and measurable.
 - Deployment is reproducible and secure.
 - User data and credentials are protected.
 - Operators can monitor quality, reliability, and cost in production.
+
+### Verified Phase 13A Result
+
+- Focused persistence and configuration checks: `13 passed`.
+- Full offline regression: `47 passed, 2 skipped`.
+- Offline benchmark: `10/10` passed, pass rate `1.00`, hallucination risk `0.00`.
 
 ## 18. Updated Delivery Order
 

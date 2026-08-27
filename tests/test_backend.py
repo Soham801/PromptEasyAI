@@ -1,5 +1,8 @@
 from fastapi.testclient import TestClient
 
+import prompteasy.service as service
+from prompteasy.config import Settings
+from prompteasy.storage import Storage
 from prompteasy.service import app
 
 
@@ -131,3 +134,44 @@ def test_preferences_endpoint_updates_personalization():
     assert payload["tone"] == "friendly"
     assert payload["audience"] == "beginner"
     assert payload["domain"] == "education"
+
+
+def test_authenticated_storage_isolated_by_user(tmp_path, monkeypatch):
+    original_storage = service._storage
+    original_get_settings = service.get_settings
+    service._storage = Storage(str(tmp_path / "prompteasy.db"))
+    monkeypatch.setattr(
+        service,
+        "get_settings",
+        lambda: Settings("test", "offline", "offline-model", 60, ":memory:", "shared-secret"),
+    )
+    try:
+        user_a = {"Authorization": "Bearer alice.shared-secret"}
+        user_b = {"Authorization": "Bearer bob.shared-secret"}
+        unauthorized = client.get("/api/history")
+        assert unauthorized.status_code == 401
+
+        analysis = {
+            "schema_version": "1.0",
+            "original_prompt": "Explain testing",
+            "intent": "Learn testing",
+            "task": "Explain testing",
+            "context": [],
+            "constraints": [],
+            "output_requirements": [],
+            "ambiguities": [],
+            "missing_information": [],
+            "optimization_opportunities": [],
+            "optimized_prompt": "Explain software testing clearly.",
+        }
+        response = client.post(
+            "/api/history",
+            headers=user_a,
+            json={"analysis": analysis, "label": "alice entry"},
+        )
+        assert response.status_code == 200
+        assert len(client.get("/api/history", headers=user_a).json()["items"]) == 1
+        assert client.get("/api/history", headers=user_b).json()["items"] == []
+    finally:
+        service._storage = original_storage
+        service.get_settings = original_get_settings

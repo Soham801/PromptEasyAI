@@ -9,14 +9,15 @@ PromptEasyAI is currently intended for local and controlled deployment. Complete
 - Use the offline provider for tests and local verification.
 - Treat prompt text and analysis results as user data; do not log them by default.
 - Use the `X-Request-ID` response header to correlate errors without exposing prompt contents.
-- Keep the current in-memory history store restricted to local or single-process use.
+- Use the SQLite-backed history and preferences store only with a protected volume; configure `PROMPTEASY_STORAGE_PATH` for its location.
+- When `PROMPTEASY_AUTH_TOKEN` is configured, persistence endpoints require `Bearer <user-id>.<token>` credentials and isolate records by user.
 
 ## Before Public Deployment
 
 - Set `PROMPTEASY_ENV=production`; production startup rejects the offline provider.
 - Set `PROMPTEASY_PROVIDER=groq` and `PROMPTEASY_MODEL` explicitly, with `GROQ_API_KEY` supplied by the deployment secret manager.
 - Use the supplied `Dockerfile` or an equivalent pinned deployment image and expose only the service port through the ingress layer.
-- Move history and preferences to authenticated, persistent storage with migrations and backups.
+- Add migrations, backups, restore testing, and managed database storage before public deployment.
 - Store provider secrets in a managed secret store and rotate them regularly.
 - Add authentication, authorization, per-user quotas, and external rate limiting.
 - Add dependency vulnerability scanning and container/image scanning in CI.

@@ -267,6 +267,23 @@ The comparison records dataset version, provider, model, per-metric deltas, and 
 
 Review benchmark artifacts across one release cycle before implementing production configuration, secret management, persistent storage, authentication, quotas, monitoring, rollback procedures, and security hardening.
 
+## Phase 13A: Persistent Storage And Data Isolation - Completed
+
+Run from the repository root:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_backend.py tests/test_config.py
+```
+
+Current verified result:
+
+```text
+13 passed
+```
+
+This verifies SQLite-backed history and preferences, storage schema initialization, optional bearer authentication, unauthorized persistence access rejection, and isolation of history records between user identities. Configure `PROMPTEASY_STORAGE_PATH` for the database file. Configure `PROMPTEASY_AUTH_TOKEN` to enable `Bearer <user-id>.<token>` authentication; the shared-token mechanism is intended as a controlled deployment boundary, not a complete public identity system.
+
 ## Full Offline Regression Suite
 
 ```powershell
@@ -274,7 +291,7 @@ cd C:\PromptEasyAI
 .\.venv\Scripts\python -m pytest -q
 ```
 
-Current result: `46 passed, 2 skipped`. The skipped tests are the opt-in live Groq probes.
+Current result: `47 passed, 2 skipped`. The skipped tests are the opt-in live Groq probes.
 
 ## Phase 13: Public Deployment And Operations - In Progress
 
@@ -291,4 +308,4 @@ These checks verify offline development defaults, production rejection of the of
 docker build -t prompteasyai:0.1.0 .
 ```
 
-Remaining Phase 13 work is authenticated persistence, managed secrets, HTTPS, quotas, monitoring, rollback, vulnerability scanning, load testing, and prompt-injection/data-isolation validation.
+Remaining Phase 13 work is database migrations/backups and restore testing, managed secrets, full authentication and authorization, HTTPS, quotas, monitoring, rollback, vulnerability scanning, load testing, and prompt-injection validation.
