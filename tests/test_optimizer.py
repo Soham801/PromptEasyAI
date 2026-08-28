@@ -4,7 +4,7 @@ import pytest
 
 from prompteasy.models import PromptAnalysis
 from prompteasy.llm import build_offline_optimized_prompt
-from prompteasy.evaluator import quality_delta
+from prompteasy.evaluator import accuracy_score, quality_delta
 from prompteasy.optimizer import (
     OptimizationPreferences,
     ProviderPromptOptimizer,
@@ -159,3 +159,19 @@ def test_quality_delta_reports_improvement_and_requirement_coverage():
     assert delta.materially_improved is True
     assert delta.requirement_coverage == 1.0
     assert delta.optimized_tokens >= delta.original_tokens
+
+
+def test_accuracy_score_reports_complete_quality_model():
+    analysis = build_analysis(
+        constraints=["Do not use jargon"],
+        output_requirements=["Use a simple explanation", "Return 3 bullet points"],
+        optimized_prompt="Explain caching to a beginner using simple language and three short bullet points. Do not use jargon.",
+    )
+
+    score = accuracy_score(analysis)
+
+    assert 0.0 <= score.overall <= 1.0
+    assert score.valid is True
+    assert score.requirement_retention >= 0.8
+    assert score.unsupported_claim_risk == 0.0
+    assert score.confidence > 0.5

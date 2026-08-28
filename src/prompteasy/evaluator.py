@@ -21,6 +21,16 @@ class QualityDelta:
 
 
 @dataclass(frozen=True)
+class AccuracyScore:
+    overall: float
+    requirement_retention: float
+    ambiguity_handling: float
+    unsupported_claim_risk: float
+    confidence: float
+    valid: bool
+
+
+@dataclass(frozen=True)
 class EvaluationExample:
     prompt: str
     expected_intent: str
@@ -207,6 +217,60 @@ def quality_delta(
         ambiguity_handling=ambiguity_handling,
         materially_improved=optimized.strip() != analysis.original_prompt.strip()
         and optimized_tokens >= original_tokens,
+    )
+
+
+def accuracy_score(
+    analysis: PromptAnalysis,
+    optimized_prompt: str | None = None,
+) -> AccuracyScore:
+    optimized = optimized_prompt or analysis.optimized_prompt
+    delta = quality_delta(analysis, optimized_prompt=optimized)
+    optimization = optimization_evaluation(analysis, optimized_prompt=optimized)
+
+    requirement_retention = delta.requirement_coverage
+    ambiguity_handling = delta.ambiguity_handling
+    unsupported_claim_risk = 0.0 if not optimization.errors else 1.0
+    if not optimization.errors:
+        unsupported_claim_risk = 0.0
+    else:
+        unsupported_claim_risk = min(1.0, max(0.0, sum(1 for error in optimization.errors if "unsupported" in error.lower()) / max(len(optimization.errors), 1)))
+
+    semantic_alignment = min(
+        1.0,
+        max(_similarity(analysis.original_prompt, analysis.intent), _similarity(analysis.original_prompt, analysis.task)),
+    )
+    confidence = min(
+        1.0,
+        (
+            0.45 * requirement_retention
+            + 0.25 * ambiguity_handling
+            + 0.20 * (1.0 - unsupported_claim_risk)
+            + 0.10 * semantic_alignment
+        ),
+    )
+    overall = min(
+        1.0,
+        (
+            0.40 * requirement_retention
+            + 0.25 * ambiguity_handling
+            + 0.25 * (1.0 - unsupported_claim_risk)
+            + 0.10 * semantic_alignment
+        ),
+    )
+
+    return AccuracyScore(
+        overall=overall,
+        requirement_retention=requirement_retention,
+        ambiguity_handling=ambiguity_handling,
+        unsupported_claim_risk=unsupported_claim_risk,
+        confidence=confidence,
+        valid=(
+            requirement_retention >= 0.8
+            and ambiguity_handling >= 0.5
+            and unsupported_claim_risk == 0.0
+            and overall >= 0.75
+        ),
     )
 
 
