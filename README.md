@@ -1,302 +1,198 @@
 # PromptEasyAI
 
-PromptEasyAI analyzes a user's raw prompt and produces a clearer, more effective version for use with another large language model. It identifies the user's intent, task, context, constraints, output requirements, ambiguities, and missing information before returning a ready-to-use optimized prompt.
+PromptEasyAI is intended to be an AI prompt enhancer, not just a prompt analyzer.
 
-The project currently includes a Python library, CLI, and FastAPI web interface. Groq provides the live language model backend, while the offline provider makes local verification deterministic and network-free.
+The current project already includes the core architecture for analysis, validation, provider abstraction, CLI usage, and a FastAPI service. That foundation is useful. However, the current optimizer is still too weak to be considered a robust prompt enhancer.
 
-## Objective
+## What the project does well
 
-PromptEasyAI is designed to improve the quality and reliability of downstream LLM results by helping users turn underspecified prompts into precise instructions without changing their original intent.
+The repository already supports:
 
-The analyzer must:
+- structured prompt analysis
+- output validation through Pydantic
+- provider abstraction for Groq and offline use
+- CLI and web-flow entry points
+- deterministic local testing without network access
 
-- Preserve the original prompt exactly.
-- Distinguish explicit requirements from inferred or missing information.
-- Identify ambiguity instead of silently guessing.
-- Preserve the user's constraints and requested output format.
-- Produce an optimized prompt, not the answer to the user's request.
+This gives the project a strong base for the next phase.
 
-## Current Status
+## The actual problem
 
-### Phase 9: Production Readiness Baseline - Complete
+The existing optimized output is not truly a ready-to-send prompt for another LLM.
 
-- Groq-backed prompt analysis.
-- Strict JSON Schema response format.
-- Pydantic validation through `PromptAnalysis`.
-- Ten-field analysis contract.
-- Optimized prompt returned in the same response.
-- Provider-agnostic optimization with intent and no-fabrication validation.
-- Human-readable `demo` CLI verification command.
-- FastAPI health metadata, request IDs, metrics, rate limiting, and clean validation errors.
-- Offline-safe automated test suite.
+I verified this directly by running the current code with a realistic prompt:
 
-### Phase 10: Interface Polish - Complete
+```powershell
+.\.venv\Scripts\python -c "from prompteasy import PromptAnalyzer; from prompteasy.llm import OfflineProvider; a = PromptAnalyzer(provider=OfflineProvider()).analyze('Build a login page for a SaaS product'); print(a.optimized_prompt)"
+```
 
-- Improve responsive layout, accessibility, comparison, editing, and browser-level coverage.
-- Preserve the existing FastAPI contract while making the interface ready for repeated user workflows.
-- The optimized prompt is editable, visibly validated, and used by copy/export actions.
-
-### Phase 11B: Adaptive Optimization - Complete
-
-- Deterministic question-first, constraint-first, format-first, reasoning-first, and direct strategies.
-- Optional audience, tone, and domain conditioning.
-- Offline-safe clarification fallback for high-impact missing information.
-
-### Phase 12: Quality Benchmark And Release Gates - Complete
-
-- Versioned benchmark coverage for vague, adversarial, domain-heavy, and format-critical prompts.
-- Machine-readable quality metrics and a release-gate CLI command.
-- Current offline baseline: 10/10 cases passed with zero hallucination risk.
-- Provider/model comparison CLI with persisted JSON reports.
-- CI quality workflow enforcing benchmark and test gates.
-
-### Phase 13: Public Deployment - In Progress
-
-- Runtime environment and provider settings are validated at startup.
-- Production rejects the offline provider and includes a container definition.
-- SQLite-backed history and preferences with optional bearer authentication and per-user isolation.
-- Remaining: migrations/backups, managed secrets, HTTPS, monitoring, quotas, rollback, and security validation.
-
-See [ProjectDetails.md](ProjectDetails.md) for the canonical product definition and [plan.md](plan.md) for the delivery roadmap.
-
-## How The System Works
+Observed output:
 
 ```text
-User prompt
-	|
-	v
-PromptAnalyzer.analyze()
-	|
-	+--> Validate input is a non-empty string
-	+--> Build the PromptAnalysis JSON Schema
-	+--> Send system instructions and the prompt to Groq
-	+--> Parse and validate the JSON response with Pydantic
-	|
-	v
-PromptAnalysis
-	|
-	+--> Structured analysis fields
-	+--> optimized_prompt for downstream LLM use
-	+--> Optional evaluate_analysis() structural check
+Build a login page for a SaaS product. Be accurate. Ask for missing details. State assumptions. Follow user constraints and format.
 ```
 
-## Requirements
+This is not a proper optimized prompt. It is a generic sentence. It does not define:
 
-- Python 3.13 or newer.
-- A Groq API key.
-- Dependencies managed by `uv` or installed through the project metadata.
+- objective and success criteria
+- target audience
+- user flow
+- required screens and states
+- accessibility expectations
+- output structure
+- acceptance criteria
+- assumptions and missing information
 
-The default model is `openai/gpt-oss-20b`. It can be changed when constructing `GroqProvider` in library code.
+A real prompt enhancer must create a prompt that another LLM can act on immediately without needing extra explanation.
 
-## Installation
+## Product goal
 
-From the repository root:
+PromptEasyAI should help a user turn a weak or vague prompt into a complete, implementation-ready instruction for any downstream LLM.
 
-```powershell
-uv sync
-```
-
-Or install the package and its declared dependencies into the existing virtual environment:
-
-```powershell
-.\.venv\Scripts\python -m pip install -e .
-```
-
-Create a `.env` file in the repository root:
-
-```env
-GROQ_API_KEY=your_groq_api_key
-```
-
-Do not commit `.env` or expose the API key in source code.
-
-## Command-Line Usage
-
-## Run The Web Interface
-
-From the repository root, start the local FastAPI server:
-
-```powershell
-.\.venv\Scripts\python -m uvicorn prompteasy.service:app --reload
-```
-
-Provider selection for CLI and web flows is controlled with environment variables:
-
-```powershell
-$env:PROMPTEASY_PROVIDER="offline"  # default, deterministic local behavior
-```
-
-To use Groq-backed optimization quality instead of offline deterministic behavior:
-
-```powershell
-$env:PROMPTEASY_PROVIDER="groq"
-$env:PROMPTEASY_MODEL="openai/gpt-oss-20b"
-```
-
-When `PROMPTEASY_PROVIDER` is set to `groq`, ensure `GROQ_API_KEY` is present in `.env`.
-
-For a production container, set `PROMPTEASY_ENV=production`, provide `GROQ_API_KEY` through the deployment secret manager, and configure `PROMPTEASY_PROVIDER=groq` plus `PROMPTEASY_MODEL`. The service rejects production startup with the offline provider.
-
-For persistent history and preferences, set `PROMPTEASY_STORAGE_PATH` to a protected SQLite file. Set `PROMPTEASY_AUTH_TOKEN` to require bearer credentials for persistence endpoints; clients use `Authorization: Bearer <user-id>.<token>`. Do not use this shared-token mechanism as a substitute for a full identity provider in public deployment.
-
-Open http://127.0.0.1:8000 in a browser. Enter a prompt, select **Analyze**, edit the optimized prompt if needed, then use **Copy optimized prompt** or **Export JSON**. The current web UI uses the deterministic offline provider, so it works without an API key.
-
-Useful service endpoints:
-
-- http://127.0.0.1:8000/health
-- http://127.0.0.1:8000/docs
-- http://127.0.0.1:8000/api/metrics
-
-Stop the server with `Ctrl+C`.
-
-Run the interactive CLI:
-
-```powershell
-uv run python main.py
-```
-
-Enter a prompt when requested. The CLI prints the original prompt, its structured analysis, optimization opportunities, and the optimized prompt.
-
-For a deterministic, human-readable verification output without network access:
-
-```powershell
-.\.venv\Scripts\python -m prompteasy.cli demo --text "Explain machine learning to a beginner"
-```
-
-This displays the detected intent, task, ambiguities, missing information, optimized prompt, and final validation status.
-
-## Use The Live Groq Model
-
-The interactive CLI uses `GroqProvider` and requires `GROQ_API_KEY` in `.env`:
-
-```powershell
-.\.venv\Scripts\python main.py
-```
-
-For a library call with an explicit model:
-
-```python
-from prompteasy import PromptAnalyzer
-from prompteasy.llm import GroqProvider
-
-provider = GroqProvider(model="openai/gpt-oss-20b")
-analysis = PromptAnalyzer(provider=provider).analyze(
-	"Create a concise onboarding guide for a new Python developer."
-)
-print(analysis.optimized_prompt)
-```
-
-Live provider probes are intentionally excluded from the default test suite. Run them only when credentials and network access are available.
-
-## Library Usage
-
-```python
-from prompteasy import PromptAnalyzer
-
-analyzer = PromptAnalyzer()
-analysis = analyzer.analyze(
-	"Explain retrieval augmented generation to me in simple terms."
-)
-
-print(analysis.optimized_prompt)
-```
-
-For a custom model configuration:
-
-```python
-from prompteasy.analyzer import PromptAnalyzer
-from prompteasy.llm import GroqProvider
-
-provider = GroqProvider(model="openai/gpt-oss-20b")
-analyzer = PromptAnalyzer(provider=provider)
-analysis = analyzer.analyze("Design an API for my application.")
-```
-
-## Response Contract
-
-`PromptAnalyzer.analyze()` returns a `PromptAnalysis` object with these fields:
-
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `original_prompt` | `str` | Exact user input. |
-| `intent` | `str` | The user's primary goal. |
-| `task` | `str` | The task requested from an LLM. |
-| `context` | `list[str]` | Relevant context explicitly provided. |
-| `constraints` | `list[str]` | Explicit restrictions and requirements. |
-| `output_requirements` | `list[str]` | Requested format, style, length, or content. |
-| `ambiguities` | `list[str]` | Vague or underspecified parts of the prompt. |
-| `missing_information` | `list[str]` | Information that would materially improve execution. |
-| `optimization_opportunities` | `list[str]` | Ways to improve clarity without changing intent. |
-| `optimized_prompt` | `str` | Ready-to-use improved prompt. |
-
-Additional fields are rejected by the Pydantic model to keep the LLM response contract explicit.
-
-## Evaluation
-
-The optional evaluator checks basic structural quality:
-
-```python
-from prompteasy.evaluator import evaluate_analysis
-
-result = evaluate_analysis(analysis)
-
-if result.valid:
-	print("Analysis is structurally valid")
-else:
-	print(result.errors)
-```
-
-This evaluator checks required fields, semantic relation, explicit requirement preservation, and unsupported details in optimized prompts.
-
-Run the offline benchmark and release gate:
-
-```powershell
-.\.venv\Scripts\python -m prompteasy.cli benchmark
-```
-
-The current gate requires a pass rate of at least `0.80` and zero detected hallucination risk. The command emits machine-readable JSON and returns a nonzero exit code when the gate fails.
-
-Compare provider/model configurations and persist the report:
-
-```powershell
-.\.venv\Scripts\python -m prompteasy.cli benchmark `
-	--compare offline:baseline `
-	--compare offline:candidate `
-	--output reports/benchmark-comparison.json
-```
-
-The CI workflow runs this offline comparison and uploads the JSON report as an artifact. Groq comparisons are opt-in and require `GROQ_API_KEY` and network access.
-
-## Testing
-
-Run the automated suite:
-
-```powershell
-uv run pytest -v
-```
-
-The default suite uses a fake provider for the optimized prompt unit test. The files `tests/test_groq.py` and `tests/test_structured_output.py` are opt-in live Groq probes and require network access and a valid API key. They are skipped unless `PROMPTEASY_RUN_LIVE_GROQ=1` is set.
-
-## Project Layout
+The final system should behave like this:
 
 ```text
-main.py                    Interactive CLI entry point
-src/prompteasy/            Installable Python package
-  analyzer.py              Groq request and structured response handling
-	evaluator.py              Quality and no-fabrication validation
-  llm.py                   Groq provider and environment configuration
-  models.py                Pydantic response models
-	optimizer.py             Provider-agnostic optimization contract
-	service.py               FastAPI API and web interface
-tests/                     Automated and manual test scripts
-tests/evaluation/          Evaluation prompts and batch runner
-pyproject.toml             Package metadata and tool configuration
+Weak prompt
+  |
+  v
+Task extraction
+  |
+  v
+Missing-info detection
+  |
+  v
+Requirements and constraints collection
+  |
+  v
+Structured prompt assembly
+  |
+  v
+Ready-to-send prompt for downstream AI
 ```
 
-## Design Principles
+## What a strong optimized prompt looks like
 
-- Analysis and prompt improvement must preserve user intent.
-- The analyzer should never execute the task it is analyzing.
-- Structured output is validated at the application boundary.
-- Missing information should be surfaced rather than fabricated.
-- Deterministic unit tests should remain independent of external LLM services.
+Instead of a generic sentence, the system should generate a prompt similar to this:
+
+```text
+You are helping create a modern login page for a SaaS product.
+
+Objective:
+Create a secure, polished login experience for a web application.
+
+Context:
+- Product type: SaaS app
+- Target users: returning users signing in
+- Platform: web application
+- Design style: modern, clean, trustworthy
+
+Requirements:
+- Support email and password sign-in
+- Validate empty and invalid input
+- Show clear error states and success feedback
+- Keep the experience responsive on mobile and desktop
+- Follow accessibility best practices
+
+Deliverables:
+- UI structure
+- interaction behavior
+- validation logic
+- edge case handling
+
+Acceptance criteria:
+- Clear login flow
+- Fast and understandable experience
+- Accessible labels and focus states
+- Professional and conversion-friendly design
+
+Assumptions:
+- If technology or branding details are missing, use a standard modern web stack and neutral SaaS design.
+
+Output format:
+Provide a concise, implementation-ready specification with sections for layout, behavior, validation, and edge cases.
+```
+
+This is the correct benchmark for the project: a prompt that is functional, structured, and ready to send.
+
+## Corrected system architecture
+
+### 1. Input normalizer
+- validate the raw prompt
+- detect empty or malformed input
+- preserve the original user intent
+
+### 2. Task understanding layer
+- classify the goal
+- identify domain, deliverables, and target user
+- extract platform, audience, and constraints
+
+### 3. Missing information engine
+- detect missing facts that materially affect delivery
+- rank clarifying questions by impact
+- ask only the most important questions when needed
+
+### 4. Constraint collector
+- gather functional, technical, UX, and security constraints
+- avoid inventing unsupported details
+
+### 5. Prompt assembler
+- produce a final structured prompt with:
+  - objective
+  - context
+  - assumptions
+  - requirements
+  - deliverables
+  - acceptance criteria
+  - output format
+
+### 6. Quality validation layer
+- verify the final prompt is action-oriented and specific
+- reject vague or fabricated rewrites
+- confirm intent remains preserved
+
+### 7. Provider-agnostic output pipeline
+- same enhancement engine can work across Groq, OpenAI, Anthropic, or local models
+- output format is consistent regardless of provider
+
+## New roadmap for the real product
+
+### Phase 1: Prompt-spec foundation
+- define a canonical prompt-spec schema
+- convert raw text into structured objective/context/constraint records
+- add validation for required fields
+
+### Phase 2: Clarification engine
+- score missing facts by impact
+- ask only the key questions before final assembly
+- merge user answers without mutating intent
+
+### Phase 3: Prompt assembly
+- build section-based templates for coding, UX, research, analysis, and general tasks
+- assemble a final prompt that is ready to send to another LLM
+
+### Phase 4: Quality and anti-hallucination checks
+- reject unsupported assumptions
+- detect under-specified prompts
+- enforce intent preservation and output-contract clarity
+
+### Phase 5: Provider abstraction and benchmarking
+- test the same enhancer across providers
+- benchmark prompt readiness and actionability
+- create release gates for prompt quality
+
+### Phase 6: API, CLI, and UI upgrade
+- expose the final enhanced prompt cleanly
+- allow preview, editing, and export
+- align the web interface around real prompt enhancement
+
+## Expected outcome
+
+The system should no longer produce a generic sentence. It should produce a usable, structured, high-quality prompt that a downstream model can act on immediately without needing the user to explain the task again.
+
+This is the direction the project should move toward.
+
+## Project status
+
+The repository has strong foundational work, but the current optimizer must be upgraded to a true prompt-enhancement engine. The next milestone is a structured prompt compiler that turns a basic idea into a complete prompt package ready for any LLM.
+
+See [ProjectDetails.md](ProjectDetails.md) for the original product intent and [plan.md](plan.md) for the corrected implementation roadmap.
