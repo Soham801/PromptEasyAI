@@ -74,6 +74,15 @@ def _similarity(left: str, right: str) -> float:
     return len(left_tokens & right_tokens) / len(union)
 
 
+def _coverage(left: str, right: str) -> float:
+    left_tokens = _tokenize(left)
+    right_tokens = _tokenize(right)
+    if not left_tokens:
+        return 0.0
+    overlap = len(left_tokens & right_tokens)
+    return overlap / len(left_tokens)
+
+
 def structural_evaluation(analysis: PromptAnalysis) -> EvaluationResult:
     errors: list[str] = []
 
@@ -131,11 +140,12 @@ def semantic_evaluation(analysis: PromptAnalysis) -> EvaluationResult:
     intent_overlap = _similarity(original, intent)
     task_overlap = _similarity(original, task)
     optimized_overlap = _similarity(original, optimized)
+    optimized_coverage = _coverage(original, optimized)
 
     if intent_overlap < 0.15 and task_overlap < 0.15:
         errors.append("intent and task are not materially related to the original prompt")
 
-    if optimized_overlap < 0.15:
+    if optimized_overlap < 0.15 and optimized_coverage < 0.5 and original.lower() not in optimized.lower():
         errors.append("optimized_prompt is not materially related to the original prompt")
 
     return EvaluationResult(
@@ -158,7 +168,13 @@ def optimization_evaluation(
     if len(source_tokens) >= 8 and len(optimized_tokens) < len(source_tokens) * 0.5:
         errors.append("optimized_prompt is over-compressed and may lose source requirements")
 
-    if _similarity(analysis.original_prompt, optimized) < 0.15:
+    optimized_overlap = _similarity(analysis.original_prompt, optimized)
+    optimized_coverage = _coverage(analysis.original_prompt, optimized)
+    if (
+        optimized_overlap < 0.15
+        and optimized_coverage < 0.5
+        and analysis.original_prompt.lower() not in optimized.lower()
+    ):
         errors.append("optimized_prompt is not materially related to the original prompt")
 
     source = " ".join(

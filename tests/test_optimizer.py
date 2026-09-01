@@ -177,7 +177,6 @@ def test_accuracy_score_reports_complete_quality_model():
         output_requirements=["Use a simple explanation", "Return 3 bullet points"],
         optimized_prompt="Explain caching to a beginner using simple language and three short bullet points. Do not use jargon.",
     )
-
     score = accuracy_score(analysis)
 
     assert 0.0 <= score.overall <= 1.0
@@ -185,3 +184,19 @@ def test_accuracy_score_reports_complete_quality_model():
     assert score.requirement_retention >= 0.8
     assert score.unsupported_claim_risk == 0.0
     assert score.confidence > 0.5
+
+
+def test_task_classifier_matches_common_prompt_families():
+    from prompteasy.task_classifier import classify_task_family
+
+    assert classify_task_family("Build a login page for a SaaS product") == "build_implement"
+    assert classify_task_family("Compare React and Vue for a dashboard") == "compare_choose"
+    assert classify_task_family("Explain caching to a beginner") == "analyze_evaluate"
+
+
+def test_prompt_spec_is_exported_from_package_root():
+    import prompteasy
+
+    assert hasattr(prompteasy, "PromptSpec")
+    assert hasattr(prompteasy, "build_prompt_spec")
+    assert hasattr(prompteasy, "render_prompt_spec")

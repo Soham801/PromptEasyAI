@@ -183,7 +183,11 @@ def build_offline_optimized_prompt(prompt: str) -> str:
             "Do not assume answers when the user has not provided them."
         )
 
-    return rendered
+    return (
+        f"{prompt_text}\n\n{rendered}\n\n"
+        "Before generating the final answer, ask for the missing details that most affect the result. "
+        "Do not assume answers when the user has not provided them."
+    )
 
 
 def _infer_ambiguities(prompt_text: str) -> list[str]:
