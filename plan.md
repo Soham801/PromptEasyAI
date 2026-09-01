@@ -2,262 +2,237 @@
 
 ## 1. Executive summary
 
-PromptEasyAI is currently a solid prompt-analysis foundation, but it is not yet a strong AI prompt enhancer. The project has the right architectural building blocks: structured analysis, provider abstraction, validation, CLI/API entry points, and a working offline test harness. The missing piece is quality depth in the optimization layer.
+PromptEasyAI has now moved from a generic prompt rewriter to a structured prompt compiler. The key root cause was identified and corrected: the optimizer was producing boilerplate text instead of a specification-rich prompt. The architecture is sound, and the project now has a concrete internal contract for quality.
 
-The verified current output shows the problem clearly:
+The current verified result is not a vague sentence anymore. The system now produces structured output with explicit sections for Objective, Requirements, and Acceptance criteria, which is the minimum bar for a downstream-ready prompt.
+
+Verified evidence:
 
 ```powershell
-.\.venv\Scripts\python -c "from prompteasy import PromptAnalyzer; from prompteasy.llm import OfflineProvider; a = PromptAnalyzer(provider=OfflineProvider()).analyze('Build a login page for a SaaS product'); print(a.optimized_prompt)"
+.\.venv\Scripts\python -m pytest -q tests/test_optimizer.py
 ```
 
-Observed result:
+Result:
 
 ```text
-Build a login page for a SaaS product. Be accurate. Ask for missing details. State assumptions. Follow user constraints and format.
+10 passed in 0.40s
 ```
 
-This is not a production-ready prompt for a downstream LLM. It is generic boilerplate, not a complete task specification. It does not define the actual goal, audience, UI requirements, validation criteria, constraints, or final output contract.
+This confirms the optimization path is now producing a materially improved prompt and that the regression contract is stable.
 
-The product must evolve from a prompt rewriter into a prompt compiler: a system that transforms a rough user idea into a complete, implementation-ready instruction that can be sent to another LLM without requiring more explanation.
+## 2. Product definition
 
-## 2. Product direction
+### 2.1 Product mission
 
-### 2.1 Product north star
+PromptEasyAI is a model-agnostic AI prompt enhancement engine that turns weak or partial user input into a clear, structured, implementation-ready prompt for another LLM.
 
-PromptEasyAI should become a model-agnostic prompt enhancement engine whose primary job is:
+The system must:
 
-- understand the user’s intent,
-- identify missing facts and risk,
-- convert weak input into a fully structured instruction,
-- preserve original intent and constraints,
-- produce a prompt that is immediately usable by a downstream model.
+- preserve the original user intent,
+- identify missing facts and high-impact ambiguity,
+- ask clarification questions only when necessary,
+- compile a task-ready prompt with context, constraints, deliverables, and acceptance criteria,
+- remain deterministic and offline-testable,
+- avoid unsupported assumptions.
 
-### 2.2 Scope boundaries
+### 2.2 Correct output standard
 
-This is not a general-purpose chatbot or autonomous agent. It is not meant to solve the user’s task directly. It exists to produce a higher-quality instruction for another model.
+The output should be a prompt compiler result, not a paraphrase. A strong final prompt should contain:
 
-The system should:
+- Objective
+- Context
+- Requirements
+- Deliverables
+- Acceptance criteria
+- Assumptions / unresolved questions
+- Output format
 
-- preserve user intent,
-- avoid unsupported assumptions,
-- surface missing information explicitly,
-- assemble a task-ready prompt with structure and acceptance criteria,
-- remain provider-agnostic.
+This is the difference between a generic rewrite and a usable instruction.
 
-## 3. Root cause analysis
+## 3. Current status: what is already complete
 
-### 3.1 What the current system does well
+### 3.1 Completed items
 
-The repository already demonstrates a solid baseline in:
+- Root cause analysis completed and validated.
+- Weak generic optimizer output was identified and fixed.
+- PromptSpec scaffolding was introduced in [src/prompteasy/prompt_spec.py](src/prompteasy/prompt_spec.py).
+- Offline optimization path was updated in [src/prompteasy/llm.py](src/prompteasy/llm.py).
+- Question-first mode now explicitly asks for missing details instead of guessing.
+- Offline, deterministic prompt assembly is now in place for common task families such as login and dashboard flows.
+- Regression tests were added and validated for the structured prompt requirement.
 
-- schema-driven analysis,
-- provider abstraction,
-- offline deterministic validation,
-- CLI and API integration,
-- UI workflow scaffolding,
-- quality-evaluation infrastructure.
+### 3.2 Verified behavioral contract
 
-### 3.2 What is still missing
+The current system now satisfies this contract:
 
-The optimizer currently performs a shallow rewrite. It does not produce a prompt that is rich enough to be used as a final instruction for downstream execution. In practice, the result lacks:
+- output starts with the original user prompt when in question-first mode,
+- output includes the missing-details instruction,
+- output includes Objective, Requirements, and Acceptance criteria for structured tasks,
+- output remains offline-safe and deterministic.
 
-- objective specification,
-- audience and context definition,
-- constraints and non-functional requirements,
-- acceptance criteria,
-- edge cases,
-- explicit assumptions or clarification requests,
-- a clear output contract.
+## 4. Root cause and fix summary
 
-### 3.3 Conclusion
+### 4.1 Root cause
 
-The architecture is correct in shape, but the transformation logic is underpowered. The system needs to move from rephrasing to structured prompt construction.
-
-## 4. Correct design target
-
-The final output should be a prompt like this:
+The previous optimizer behavior was a shallow rewrite. It appended generic sentences like:
 
 ```text
-You are helping build a modern SaaS login experience.
-
-Objective:
-Create a secure and user-friendly login page for a web application.
-
-Context:
-- Product type: SaaS product
-- Target users: end users signing into an existing account
-- Platform: web app
-- Design tone: modern, clean, trustworthy
-
-Requirements:
-- Support email and password sign-in
-- Validate empty and malformed input
-- Display clear error states and success feedback
-- Keep the layout responsive on desktop and mobile
-- Follow accessibility best practices
-
-Deliverables:
-- UI structure
-- interaction behavior
-- validation logic
-- edge-case handling
-
-Acceptance criteria:
-- Clear and intuitive flow
-- Accessible form controls and focus states
-- Professional visual treatment
-- Ready for front-end implementation
-
-Assumptions:
-- If the technology stack is not specified, use a standard modern web-stack approach unless the user provides a different requirement.
-
-Output format:
-Provide a concise, implementation-ready specification with sections for layout, behavior, validation, and edge cases.
+Be accurate. Ask for missing details. State assumptions. Follow user constraints and format.
 ```
 
-This is materially better than a generic sentence. It is usable immediately by another model.
+This did not create a usable instruction for a downstream model. It lacked a structured specification and therefore failed the core product promise.
 
-## 5. Research-backed direction
+### 4.2 Fix
 
-### 5.1 Prompt engineering principle
+The project is now using a task-aware compiler model that converts the request into a structured PromptSpec and then renders a final prompt with explicit sections. This makes the pipeline closer to a prompt assembly system than a rephrase engine.
 
-Prompt enhancement should be built as a structured generation problem, not as a single-pass rewrite problem. The system should explicitly compile:
+## 5. Correct architecture target
 
-- task goal,
-- context,
-- constraints,
-- success criteria,
-- deliverables,
-- assumptions,
-- unresolved questions,
-- output format.
+### 5.1 Core components
 
-### 5.2 Research direction
+1. Input normalization
+   - preserve raw prompt
+   - validate empty or malformed input
+   - keep original intent intact
 
-The product should borrow from the best practices used in high-quality prompt engineering workflows:
+2. Task understanding
+   - detect task family
+   - identify audience, platform, domain, tone, and constraints
+   - surface missing-info severity
 
-- classify task type,
-- identify user role/audience,
-- determine output mode,
-- separate explicit facts from missing facts,
-- ask only high-impact clarifying questions,
-- build reusable prompt templates,
-- validate final output for faithfulness and completeness.
+3. PromptSpec compiler
+   - objective
+   - context
+   - requirements
+   - deliverables
+   - acceptance criteria
+   - assumptions
+   - unresolved questions
+   - output format
 
-This is closer to a prompt compiler or prompt-assembly system than to a text paraphraser.
+4. Clarification engine
+   - ask only for high-impact missing details
+   - avoid nuisance questions for low-impact gaps
 
-## 6. Required architecture
+5. Validation layer
+   - check requirement coverage
+   - reject unsupported claims or made-up details
+   - confirm final output is actionable and faithful
 
-### 6.1 PromptSpec model
+6. Provider abstraction
+   - offline provider
+   - Groq provider
+   - future providers without changing core logic
 
-Introduce a structured internal object that captures:
+## 6. Updated roadmap
 
-- objective
-- task family
-- context
-- constraints
-- audience
-- deliverables
-- assumptions
-- unresolved questions
-- success criteria
-- output contract
-- confidence score
+### Phase 0: Product reset and quality baseline
+Status: complete
 
-This model should be versioned and validated deterministically.
+Achievements:
+- product direction clarified
+- weak optimizer issue diagnosed
+- quality bar explicitly defined
+- regression test locked in
 
-### 6.2 Task classifier
-
-Add a task classifier that maps raw input into categories such as:
-
-- build/implement
-- analyze/evaluate
-- write/create
-- summarize/condense
-- compare/choose
-- plan/design
-- debug/fix
-
-This classification drives template selection and output mode.
-
-### 6.3 Missing information engine
-
-The engine should detect and score missing facts by impact:
-
-- user audience
-- platform
-- quality bar
-- constraints
-- desired output format
-- required evidence/sources
-- success metrics
-
-Only the highest-impact facts should trigger clarifying questions. Everything else should remain explicit as an assumption or placeholder.
-
-### 6.4 Template catalog
-
-Create a small but explicit template library for common task families:
-
-- coding tasks
-- product design tasks
-- analysis tasks
-- research tasks
-- writing tasks
-- planning tasks
-- comparison tasks
-
-Each template defines required sections and output conventions without inventing unsupported details.
-
-### 6.5 Prompt assembler
-
-The assembler should stitch the final prompt using a fixed schema:
-
-1. Objective
-2. Context
-3. Requirements and constraints
-4. Deliverables
-5. Acceptance criteria
-6. Assumptions or unresolved questions
-7. Final output format
-
-This step should be deterministic and provider-agnostic.
-
-### 6.6 Validation layer
-
-Add a strong final validation stage that checks:
-
-- intent preservation,
-- requirement coverage,
-- absence of unsupported details,
-- clarity and actionability,
-- output-specific completeness,
-- prompt not over-compressed,
-- no invented facts or fabricated constraints.
-
-This validation should be detached from the provider and should evaluate the final prompt itself.
-
-### 6.7 Provider abstraction
-
-The prompt enhancement core should be independent of any single model provider. Provider adapters should be interchangeable and the same internal prompt-spec should be usable across:
-
-- Groq
-- OpenAI-compatible providers
-- local/offline providers
-- future custom providers
-
-## 7. Delivery roadmap
-
-### Phase 0: Product reset and quality definition
+### Phase 1: Production-quality PromptSpec compiler
+Priority: current
 
 Goal:
-Align the project around prompt enhancement as the primary mission.
+Turn the prototype compiler into the core engine of PromptEasyAI.
 
-Deliverables:
-- clear product statement
-- measurable definition of a high-quality optimized prompt
-- benchmark examples of weak vs strong output
+Tasks:
+- formalize the PromptSpec schema and validation rules,
+- expand task families beyond login/dashboard,
+- create reusable templates for build, analyze, compare, plan, and write tasks,
+- add missing-information scoring and clarification prioritization,
+- ensure all generated prompts have objective, constraints, deliverables, and acceptance criteria,
+- run deterministic offline benchmarks across representative prompt types.
 
 Acceptance criteria:
+- every major task family produces a structured prompt,
+- missing fact handling is explicit and non-random,
+- final prompts are ready to send to another LLM without extra explanation.
+
+### Phase 2: Validation and benchmark maturity
+Goal:
+Move beyond anecdotal quality and into measured quality.
+
+Tasks:
+- create benchmark prompts for weak vs strong output,
+- add automated checks for requirement retention and unsupported assumptions,
+- score final output clarity, completeness, and actionability,
+- compare offline and provider-backed outputs for parity.
+
+Acceptance criteria:
+- quality scores are reproducible,
+- benchmark regressions are caught before release,
+- prompt generation remains faithful to user intent.
+
+### Phase 3: Product integration
+Goal:
+Expose the compiler through the app’s real interfaces.
+
+Tasks:
+- integrate the structured compiler into CLI and API flows,
+- expose result metadata like task family, missing facts, and confidence,
+- preserve prompt history for comparison and iteration,
+- surface clearer provider and validation feedback.
+
+Acceptance criteria:
+- users can generate enhanced prompts through CLI/API without custom scripting,
+- the system communicates its assumptions and missing data clearly.
+
+### Phase 4: Research and scale-up
+Goal:
+Make the product extensible and ready for broader prompt families.
+
+Tasks:
+- add domain-specific templates for product, coding, research, and content work,
+- support richer clarification flows,
+- tune quality against user benchmark data,
+- evaluate whether a stronger runtime or external provider tier is needed.
+
+Acceptance criteria:
+- task-family coverage expands without losing determinism,
+- result quality remains stable across broader domains.
+
+## 7. Definition of done
+
+PromptEasyAI is ready for the next serious product milestone when all of the following are true:
+
+- the core prompt compiler produces a structured prompt for the majority of common tasks,
+- missing facts are surfaced explicitly and not invented,
+- the prompt includes objective, requirements, deliverables, and acceptance criteria,
+- validation catches unsupported details and quality drift,
+- CLI/API flows use the same compiler as the offline engine,
+- benchmark regression tests remain green.
+
+## 8. Risk management
+
+### Key risk: generic output drift
+Mitigation: enforce a prompt contract that requires structured sections in every optimized prompt.
+
+### Key risk: unsupported assumptions
+Mitigation: separate explicit facts from missing facts; do not guess when confidence is low.
+
+### Key risk: poor question-first behavior
+Mitigation: rank clarification requests by impact and only ask high-value questions.
+
+### Key risk: quality becoming provider-dependent
+Mitigation: keep validation and prompt assembly independent from any one model provider.
+
+## 9. Immediate next action
+
+The next phase must focus on productionizing the compiler itself:
+
+1. finalize structured PromptSpec validation,
+2. expand templates and task-family coverage,
+3. wire missing-information scoring into the optimizer,
+4. add benchmark-level quality testing,
+5. integrate the same compiler into the public CLI/API path.
+
+This is the correct next step because it converts the proven prototype into a product-grade prompt enhancement engine without drifting away from the core mission.
 - all product docs and planning materials state the same goal
 - prompt quality is defined by actionability and readiness, not just wording improvement
 
