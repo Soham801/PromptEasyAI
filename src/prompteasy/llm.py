@@ -160,23 +160,30 @@ def build_offline_response(prompt: str) -> str:
 
 
 def build_offline_optimized_prompt(prompt: str) -> str:
-    prompt_text = prompt.strip() or "prompt"
+    from .prompt_spec import build_prompt_spec, render_prompt_spec
+
+    raw_prompt = (prompt or "").strip() or "prompt"
     original_match = re.search(
-        r"Original prompt:\n(.*?)(?:\n\n|\Z)", prompt_text, re.DOTALL
+        r"Original prompt:\n(.*?)(?:\n\n|\Z)", raw_prompt, re.DOTALL
     )
-    if original_match:
-        original = original_match.group(1).strip()
-        strategy = "question-first" if "question-first mode" in prompt_text.lower() else "direct"
-        if strategy == "question-first":
-            return (
-                f"{original}\n\nBefore completing this request, ask for the missing details that most affect the result, "
-                "including the intended audience and desired output format. Do not assume answers."
-            )
-        prompt_text = original
-    return (
-        f"{prompt_text}. Be accurate. Ask for missing details. "
-        "State assumptions. Follow user constraints and format."
+    prompt_text = original_match.group(1).strip() if original_match else raw_prompt
+    question_first = (
+        "question-first" in raw_prompt.lower()
+        or "clarif" in raw_prompt.lower()
+        or "missing details" in raw_prompt.lower()
     )
+
+    spec = build_prompt_spec(prompt_text)
+    rendered = render_prompt_spec(spec)
+
+    if question_first:
+        return (
+            f"{prompt_text}\n\n{rendered}\n\n"
+            "Before generating the final answer, ask for the missing details that most affect the result. "
+            "Do not assume answers when the user has not provided them."
+        )
+
+    return rendered
 
 
 def _infer_ambiguities(prompt_text: str) -> list[str]:

@@ -149,6 +149,16 @@ def test_offline_question_first_prompt_asks_before_assuming():
     assert "Do not assume answers" in result
 
 
+def test_offline_prompt_compiler_builds_structured_ready_to_send_prompt():
+    result = build_offline_optimized_prompt("Build a login page for a SaaS product")
+
+    assert "Objective:" in result
+    assert "Requirements:" in result
+    assert "Acceptance criteria:" in result
+    assert "SaaS" in result
+    assert "web application" in result.lower()
+
+
 def test_quality_delta_reports_improvement_and_requirement_coverage():
     analysis = build_analysis(
         constraints=["Do not use jargon"],
