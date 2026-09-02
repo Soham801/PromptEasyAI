@@ -27,21 +27,28 @@ def classify_task_family(prompt: str) -> str:
     if any(
         marker in text
         for marker in (
-            "build",
-            "create",
-            "design",
-            "implement",
-            "make",
-            "develop",
-            "page",
-            "dashboard",
-            "login",
-            "app",
-            "website",
-            "ui",
+            "debug",
+            "fix",
+            "error",
+            "issue",
+            "bug",
+            "troubleshoot",
         )
     ):
-        return "build_implement"
+        return "debug_fix"
+
+    if any(
+        marker in text
+        for marker in (
+            "plan",
+            "roadmap",
+            "strategy",
+            "approach",
+            "timeline",
+            "architecture",
+        )
+    ):
+        return "plan_design"
 
     if any(
         marker in text
@@ -60,32 +67,6 @@ def classify_task_family(prompt: str) -> str:
     if any(
         marker in text
         for marker in (
-            "plan",
-            "roadmap",
-            "strategy",
-            "approach",
-            "timeline",
-            "architecture",
-        )
-    ):
-        return "plan_design"
-
-    if any(
-        marker in text
-        for marker in (
-            "debug",
-            "fix",
-            "error",
-            "issue",
-            "bug",
-            "troubleshoot",
-        )
-    ):
-        return "debug_fix"
-
-    if any(
-        marker in text
-        for marker in (
             "summarize",
             "summary",
             "condense",
@@ -94,6 +75,25 @@ def classify_task_family(prompt: str) -> str:
         )
     ):
         return "summarize_distill"
+
+    if any(
+        marker in text
+        for marker in (
+            "build",
+            "create",
+            "design",
+            "implement",
+            "make",
+            "develop",
+            "page",
+            "dashboard",
+            "login",
+            "app",
+            "website",
+            "ui",
+        )
+    ):
+        return "build_implement"
 
     if any(
         marker in text
