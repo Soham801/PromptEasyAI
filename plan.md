@@ -233,3 +233,14 @@ The next phase must focus on productionizing the compiler itself:
 5. integrate the same compiler into the public CLI/API path.
 
 This is the correct next step because it converts the proven prototype into a product-grade prompt enhancement engine without drifting away from the core mission.
+
+## 10. Current continuation status
+
+The PromptSpec compiler and common task-family expansion are complete and covered by regression tests. Phase 13 operations now also includes verified SQLite backup and atomic restore support exposed through the maintenance CLI.
+
+Next following steps:
+
+1. add managed-secret and deployment configuration checks,
+2. complete production authentication and authorization boundaries,
+3. add HTTPS, quotas, monitoring, rollback, and security verification,
+4. run load and prompt-injection validation before public deployment.

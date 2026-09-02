@@ -54,3 +54,16 @@ def test_cli_demo_prints_human_readable_verification(capsys):
     assert "Original prompt:" in captured.out
     assert "Optimized prompt:" in captured.out
     assert "Validation: PASS" in captured.out
+
+
+def test_cli_storage_backup_and_restore(tmp_path, capsys):
+    database_path = tmp_path / "prompteasy.db"
+    backup_path = tmp_path / "backup.db"
+
+    assert main(["storage", "--database", str(database_path), "--backup", str(backup_path)]) == 0
+    backup_output = json.loads(capsys.readouterr().out)
+    assert backup_output == {"operation": "backup", "database": str(backup_path)}
+
+    assert main(["storage", "--database", str(database_path), "--restore", str(backup_path)]) == 0
+    restore_output = json.loads(capsys.readouterr().out)
+    assert restore_output == {"operation": "restore", "database": str(database_path)}

@@ -308,4 +308,26 @@ These checks verify offline development defaults, production rejection of the of
 docker build -t prompteasyai:0.1.0 .
 ```
 
-Remaining Phase 13 work is database migrations/backups and restore testing, managed secrets, full authentication and authorization, HTTPS, quotas, monitoring, rollback, vulnerability scanning, load testing, and prompt-injection validation.
+Remaining Phase 13 work is database migrations, managed secrets, full authentication and authorization, HTTPS, quotas, monitoring, rollback, vulnerability scanning, load testing, and prompt-injection validation.
+
+## Phase 13B: Backup And Restore Operations - Completed
+
+The storage layer now supports consistent SQLite backups and atomic restores through `Storage.backup_to()` and `Storage.restore_from()`. The implementation explicitly closes SQLite connections so replacement works on Windows, and rejects missing or same-path backup files.
+
+Run the focused verification:
+
+```powershell
+cd C:\PromptEasyAI
+.\.venv\Scripts\python -m pytest -q tests/test_cli.py tests/test_backend.py
+```
+
+Current verified result: `19 passed`.
+
+Operators can use the maintenance CLI with the configured `PROMPTEASY_STORAGE_PATH`:
+
+```powershell
+.\.venv\Scripts\python -m prompteasy.cli storage --backup backups\prompteasy.db
+.\.venv\Scripts\python -m prompteasy.cli storage --restore backups\prompteasy.db
+```
+
+Next Phase 13 steps are managed secrets, complete authentication and authorization, HTTPS deployment, quotas, monitoring and alerting, rollback procedures, vulnerability scanning, load testing, and prompt-injection validation.

@@ -4,6 +4,8 @@ import json
 import sys
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
 from .benchmark import compare_benchmarks, run_benchmark, write_report
+from .config import get_settings
+from .storage import Storage
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -35,6 +37,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Benchmark a provider/model pair; repeat for candidate comparisons.",
     )
     benchmark.add_argument("--output", help="Write the benchmark report to a JSON file.")
+
+    storage = subparsers.add_parser("storage", help="Back up or restore local storage")
+    storage_group = storage.add_mutually_exclusive_group(required=True)
+    storage_group.add_argument("--backup", metavar="PATH", help="Write a database backup")
+    storage_group.add_argument("--restore", metavar="PATH", help="Restore a database backup")
+    storage.add_argument("--database", help="Override the configured database path")
 
     return parser
 
@@ -117,6 +125,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report.baseline["release_gate_passed"] and all(
             candidate["release_gate_passed"] for candidate in report.candidates
         ) else 1
+
+    if args.command == "storage":
+        database = args.database or get_settings().storage_path
+        storage = Storage(database)
+        if args.backup:
+            destination = storage.backup_to(args.backup)
+            operation = "backup"
+        else:
+            destination = storage.restore_from(args.restore)
+            operation = "restore"
+        print(json.dumps({"operation": operation, "database": str(destination)}))
+        return 0
 
     parser.error("Unsupported command")
     return 2

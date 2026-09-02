@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 import prompteasy.service as service
@@ -134,6 +135,32 @@ def test_preferences_endpoint_updates_personalization():
     assert payload["tone"] == "friendly"
     assert payload["audience"] == "beginner"
     assert payload["domain"] == "education"
+
+
+def test_storage_backup_and_restore_preserve_history_and_preferences(tmp_path):
+    database_path = tmp_path / "prompteasy.db"
+    backup_path = tmp_path / "backups" / "prompteasy-backup.db"
+    storage = Storage(str(database_path))
+
+    storage.save_history("alice", "entry", "2026-09-02T00:00:00Z", {"prompt": "Explain testing"})
+    storage.update_preferences("alice", {"tone": "friendly"})
+    storage.backup_to(str(backup_path))
+
+    storage.update_preferences("alice", {"tone": "formal"})
+    storage.restore_from(str(backup_path))
+
+    assert storage.list_history("alice")[0]["label"] == "entry"
+    assert storage.get_preferences("alice")["tone"] == "friendly"
+
+
+def test_storage_backup_and_restore_reject_invalid_paths(tmp_path):
+    database_path = tmp_path / "prompteasy.db"
+    storage = Storage(str(database_path))
+
+    with pytest.raises(ValueError, match="differ"):
+        storage.backup_to(str(database_path))
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        storage.restore_from(str(tmp_path / "missing.db"))
 
 
 def test_authenticated_storage_isolated_by_user(tmp_path, monkeypatch):
