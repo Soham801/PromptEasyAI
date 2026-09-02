@@ -10,6 +10,7 @@ from prompteasy.optimizer import (
     ProviderPromptOptimizer,
     select_optimization_strategy,
 )
+from prompteasy.prompt_spec import PromptSpec, build_prompt_spec, render_prompt_spec
 
 
 class FakeOptimizerProvider:
@@ -192,6 +193,48 @@ def test_task_classifier_matches_common_prompt_families():
     assert classify_task_family("Build a login page for a SaaS product") == "build_implement"
     assert classify_task_family("Compare React and Vue for a dashboard") == "compare_choose"
     assert classify_task_family("Explain caching to a beginner") == "analyze_evaluate"
+
+
+def test_prompt_spec_expands_to_common_task_families():
+    compare_spec = build_prompt_spec("Compare React and Vue for a dashboard")
+    assert compare_spec.task_family == "compare_choose"
+    assert compare_spec.objective
+    assert "React" in " ".join(compare_spec.context + compare_spec.constraints + compare_spec.deliverables)
+
+    write_spec = build_prompt_spec("Write a launch email for a new product")
+    assert write_spec.task_family == "write_create"
+    assert any("tone" in item.lower() or "audience" in item.lower() for item in write_spec.context)
+
+    plan_spec = build_prompt_spec("Plan a migration roadmap for our API")
+    assert plan_spec.task_family == "plan_design"
+    assert any("roadmap" in item.lower() or "timeline" in item.lower() for item in plan_spec.deliverables)
+
+    debug_spec = build_prompt_spec("Debug the login form validation bug")
+    assert debug_spec.task_family == "debug_fix"
+    assert any("validation" in item.lower() for item in debug_spec.constraints)
+
+    summary_spec = build_prompt_spec("Summarize this report for leadership")
+    assert summary_spec.task_family == "summarize_distill"
+    assert any("summary" in item.lower() or "executive" in item.lower() for item in summary_spec.deliverables)
+
+
+def test_prompt_spec_validation_rejects_empty_required_values():
+    with pytest.raises(ValueError, match="objective"):
+        PromptSpec(
+            objective="",
+            task_family="build_implement",
+            context=["Context"],
+            constraints=["Constraint"],
+            deliverables=["Deliverable"],
+            acceptance_criteria=["Accepted"],
+            assumptions=[],
+            output_format="Return a brief result.",
+        )
+
+    rendered = render_prompt_spec(build_prompt_spec("Write a product brief"))
+    assert "Objective:" in rendered
+    assert "Requirements:" in rendered
+    assert "Acceptance criteria:" in rendered
 
 
 def test_prompt_spec_is_exported_from_package_root():
