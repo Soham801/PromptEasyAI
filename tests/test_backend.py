@@ -164,13 +164,51 @@ def test_storage_backup_and_restore_reject_invalid_paths(tmp_path):
 
 
 def test_authenticated_storage_isolated_by_user(tmp_path, monkeypatch):
+    from prompteasy.deployment import (
+        SecretsConfig,
+        HttpsConfig,
+        QuotasConfig,
+        MonitoringConfig,
+    )
+    
     original_storage = service._storage
     original_get_settings = service.get_settings
     service._storage = Storage(str(tmp_path / "prompteasy.db"))
     monkeypatch.setattr(
         service,
         "get_settings",
-        lambda: Settings("test", "offline", "offline-model", 60, ":memory:", "shared-secret"),
+        lambda: Settings(
+            environment="test",
+            provider="offline",
+            model="offline-model",
+            request_rate_limit=60,
+            storage_path=":memory:",
+            auth_token="shared-secret",
+            secrets=SecretsConfig(
+                groq_api_key=None,
+                auth_token="shared-secret",
+                db_password=None,
+                jwt_secret="x" * 32,
+            ),
+            https_config=HttpsConfig(
+                enabled=False,
+                cert_path=None,
+                key_path=None,
+                redirect_http=False,
+            ),
+            quotas=QuotasConfig(
+                request_rate_limit=60,
+                requests_per_hour=1000,
+                requests_per_day=10000,
+                max_prompt_length=50000,
+            ),
+            monitoring=MonitoringConfig(
+                metrics_enabled=True,
+                traces_enabled=False,
+                log_level="INFO",
+                health_check_interval=30,
+            ),
+        ),
     )
     try:
         user_a = {"Authorization": "Bearer alice.shared-secret"}

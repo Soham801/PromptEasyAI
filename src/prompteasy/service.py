@@ -6,10 +6,12 @@ import hashlib
 import hmac
 from typing import Any
 from uuid import uuid4
+import logging
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .api import analyze_prompt, evaluate_prompt, get_provider_config
@@ -17,7 +19,13 @@ from .config import get_settings
 from .models import PromptAnalysis
 from .optimizer import OptimizationPreferences
 from .storage import Storage
+from .deployment import SecurityValidator, configure_logging
 
+
+# Configure logging based on settings
+settings = get_settings()
+configure_logging(settings.environment, settings.monitoring.log_level)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="PromptEasyAI")
 
@@ -26,6 +34,31 @@ RATE_WINDOW_SECONDS = 60
 _request_counts: dict[str, int] = defaultdict(int)
 _request_times: dict[str, deque[datetime]] = defaultdict(deque)
 _metrics: dict[str, int] = defaultdict(int)
+
+
+# Add CORS middleware for cross-origin requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if settings.environment == "development" else ["https://localhost"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    
+    # Security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    
+    return response
 
 
 @app.middleware("http")
@@ -515,16 +548,54 @@ class EvaluateRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-  settings = get_settings()
-  return {"status": "ok", "service": "prompteasyai", "version": "0.1.0", "environment": settings.environment}
+  settings_obj = get_settings()
+  health_check = settings_obj.get_health_check()
+  return {
+    "status": "ok" if health_check["healthy"] else "degraded",
+    "service": "prompteasyai",
+    "version": "0.1.0",
+    "environment": settings_obj.environment,
+    "deployment_health": health_check,
+  }
 
 
 @app.get("/api/metrics")
 def metrics() -> dict[str, Any]:
+  settings_obj = get_settings()
   return {
     "requests": dict(_metrics),
     "methods": dict(_request_counts),
     "history_entries": _storage.count_history(),
+    "deployment": {
+      "environment": settings_obj.environment,
+      "provider": settings_obj.provider,
+      "https_enabled": settings_obj.https_config.enabled,
+      "metrics_enabled": settings_obj.monitoring.metrics_enabled,
+    }
+  }
+
+
+@app.post("/api/security/check")
+def security_check_prompt(payload: AnalyzeRequest) -> dict[str, Any]:
+  """Analyze prompt for security risks without processing it."""
+  injection_risk = SecurityValidator.validate_prompt_injection_risk(payload.prompt)
+  secrets_check = SecurityValidator.validate_secrets_in_prompt(payload.prompt)
+  content_hash = SecurityValidator.compute_content_hash(payload.prompt)
+  
+  return {
+    "prompt_hash": content_hash,
+    "injection_risk": {
+      "safe": injection_risk["safe"],
+      "risk_level": injection_risk["risk_level"],
+      "patterns_found": injection_risk["patterns_found"],
+      "recommendation": injection_risk["recommendation"],
+    },
+    "secrets": {
+      "contains_secrets": secrets_check["contains_secrets"],
+      "types_found": secrets_check["types_found"],
+      "recommendation": secrets_check["recommendation"],
+    },
+    "overall_safe": injection_risk["safe"] and not secrets_check["contains_secrets"],
   }
 
 
@@ -535,6 +606,35 @@ def config() -> dict[str, str]:
 
 @app.post("/api/analyze")
 def analyze_endpoint(payload: AnalyzeRequest, request: Request) -> dict[str, Any]:
+    # Validate prompt length
+    settings_obj = get_settings()
+    if len(payload.prompt) > settings_obj.quotas.max_prompt_length:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Prompt exceeds maximum length of {settings_obj.quotas.max_prompt_length} characters"
+        )
+    
+    # Check for prompt injection risks
+    injection_risk = SecurityValidator.validate_prompt_injection_risk(payload.prompt)
+    if not injection_risk["safe"]:
+        logger.warning(
+            f"Potential prompt injection detected: risk_level={injection_risk['risk_level']}, "
+            f"patterns={injection_risk['patterns_found']}"
+        )
+        if injection_risk["risk_level"] == "high":
+            raise HTTPException(
+                status_code=400,
+                detail="Prompt contains potential injection patterns and cannot be processed"
+            )
+    
+    # Check for secrets in prompt
+    secrets_check = SecurityValidator.validate_secrets_in_prompt(payload.prompt)
+    if secrets_check["contains_secrets"]:
+        logger.warning(
+            f"Potential secrets detected in prompt: types={secrets_check['types_found']}"
+        )
+        # Log but don't block - just warn
+    
     try:
         preferences = _storage.get_preferences(_user_id(request))
         analysis = analyze_prompt(
@@ -543,7 +643,16 @@ def analyze_endpoint(payload: AnalyzeRequest, request: Request) -> dict[str, Any
         )
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return analysis.model_dump(mode="json")
+    
+    result = analysis.model_dump(mode="json")
+    
+    # Add security metadata
+    result["security_metadata"] = {
+        "injection_risk": injection_risk["risk_level"],
+        "contains_secrets": secrets_check["contains_secrets"],
+    }
+    
+    return result
 
 
 @app.post("/api/evaluate")

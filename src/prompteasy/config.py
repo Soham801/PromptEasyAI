@@ -2,6 +2,15 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Any
+
+from .deployment import (
+    SecretsConfig,
+    HttpsConfig,
+    QuotasConfig,
+    MonitoringConfig,
+    DeploymentHealthCheck,
+)
 
 
 @dataclass(frozen=True)
@@ -12,6 +21,12 @@ class Settings:
     request_rate_limit: int
     storage_path: str
     auth_token: str
+    
+    # Phase 13 deployment features
+    secrets: SecretsConfig
+    https_config: HttpsConfig
+    quotas: QuotasConfig
+    monitoring: MonitoringConfig
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -42,7 +57,57 @@ class Settings:
         if environment == "production" and provider == "offline":
             raise ValueError("The offline provider cannot be used in production.")
 
-        return cls(environment, provider, model, request_rate_limit, storage_path, auth_token)
+        # Load deployment features
+        secrets = SecretsConfig.from_env()
+        https_config = HttpsConfig.from_env()
+        quotas = QuotasConfig.from_env()
+        monitoring = MonitoringConfig.from_env()
+        
+        # Validate production deployment
+        if environment == "production":
+            secret_errors = secrets.validate_for_production()
+            https_errors = https_config.validate()
+            
+            if secret_errors:
+                raise ValueError(
+                    f"Production secrets validation failed: {'; '.join(secret_errors)}"
+                )
+            
+            if https_errors:
+                raise ValueError(
+                    f"Production HTTPS validation failed: {'; '.join(https_errors)}"
+                )
+
+        return cls(
+            environment=environment,
+            provider=provider,
+            model=model,
+            request_rate_limit=request_rate_limit,
+            storage_path=storage_path,
+            auth_token=auth_token,
+            secrets=secrets,
+            https_config=https_config,
+            quotas=quotas,
+            monitoring=monitoring,
+        )
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert settings to dictionary for API responses."""
+        return {
+            "environment": self.environment,
+            "provider": self.provider,
+            "model": self.model,
+            "request_rate_limit": self.request_rate_limit,
+            "storage_path": self.storage_path,
+            "https_enabled": self.https_config.enabled,
+            "metrics_enabled": self.monitoring.metrics_enabled,
+            "traces_enabled": self.monitoring.traces_enabled,
+            "log_level": self.monitoring.log_level,
+        }
+    
+    def get_health_check(self) -> dict[str, Any]:
+        """Get comprehensive health check for this configuration."""
+        return DeploymentHealthCheck.check_all(self.to_dict())
 
 
 def get_settings() -> Settings:
